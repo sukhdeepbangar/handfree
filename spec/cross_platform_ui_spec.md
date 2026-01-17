@@ -21,9 +21,7 @@ This specification describes two major features for HandFree:
 
 HandFree currently uses macOS-specific APIs:
 - **Quartz CGEventTap** - For Fn/Globe key detection
-- **AVFAudio** - For AirPods mute gesture detection
 - **osascript/AppleScript** - For typing text into applications
-- **Foundation NSRunLoop** - For event loop in AirPods mode
 
 ### 1.2 Requirements
 
@@ -36,7 +34,7 @@ HandFree currently uses macOS-specific APIs:
 | CP-3 | Hotkey detection shall work on all platforms | Must |
 | CP-4 | Text output (typing) shall work on all platforms | Must |
 | CP-5 | Clipboard operations shall work on all platforms | Must |
-| CP-6 | AirPods mute detection shall remain macOS-only with clear error on other platforms | Should |
+| CP-6 | Platform-specific features shall have clear documentation | Should |
 | CP-7 | Platform shall be auto-detected at runtime | Must |
 
 #### 1.2.2 Hotkey Requirements
@@ -68,7 +66,6 @@ src/handfree/platform/
 ├── macos/
 │   ├── __init__.py
 │   ├── hotkey_detector.py   # Fn key via CGEventTap
-│   ├── mute_detector.py     # AirPods via AVFAudio
 │   └── output_handler.py    # AppleScript
 ├── windows/
 │   ├── __init__.py
@@ -255,7 +252,6 @@ class HandFreeUI:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HANDFREE_USE_HOTKEY` | `true` | Use hotkey mode (false = AirPods mode, macOS only) |
 | `HANDFREE_HOTKEY` | Platform default | Custom hotkey (e.g., "ctrl+shift+r") |
 | `HANDFREE_UI_ENABLED` | `true` | Enable visual UI |
 | `HANDFREE_UI_POSITION` | `top-center` | Indicator position (top-center, top-right, bottom-center) |

@@ -16,7 +16,7 @@ class ConfigurationError(HandFreeError):
 
 
 class MuteDetectionError(HandFreeError):
-    """Error detecting mute state from AirPods."""
+    """Error detecting input mute state."""
     pass
 
 

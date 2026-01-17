@@ -236,7 +236,7 @@ This plan implements two features in priority order:
 
 ### Step 5.3: Error Handling
 - [ ] 5.3.1 Graceful degradation if UI fails to initialize
-- [ ] 5.3.2 Clear error message if AirPods mode used on Windows/Linux
+- [ ] 5.3.2 Clear error messages for platform-specific features
 - [ ] 5.3.3 Log platform detection and selected handlers
 
 ### Step 5.4: Documentation

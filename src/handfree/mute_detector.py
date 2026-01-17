@@ -1,7 +1,8 @@
 """
 Mute Detector Module
-Detects AirPods mute/unmute gestures using macOS AVFAudio framework.
+Detects input mute state changes using macOS AVFAudio framework.
 Requires macOS 14 (Sonoma) or later.
+Note: This module is deprecated - use hotkey_detector.py instead.
 """
 
 from typing import Callable, Optional
@@ -10,15 +11,15 @@ from Foundation import NSNotificationCenter
 
 
 class MuteDetector:
-    """Detects AirPods mute/unmute gestures via AVAudioApplication API."""
+    """Detects input mute state changes via AVAudioApplication API (deprecated)."""
 
     def __init__(self, on_mute: Callable[[], None], on_unmute: Callable[[], None]):
         """
         Initialize mute detector with callbacks.
 
         Args:
-            on_mute: Called when user mutes (press AirPods stem)
-            on_unmute: Called when user unmutes
+            on_mute: Called when input is muted
+            on_unmute: Called when input is unmuted
         """
         self.on_mute = on_mute
         self.on_unmute = on_unmute

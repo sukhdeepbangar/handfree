@@ -109,15 +109,15 @@ class TestReadmeUsageContent:
         readme_path = PROJECT_ROOT / "README.md"
         return readme_path.read_text()
 
-    def test_mentions_airpods(self, readme_content):
-        """Usage should mention AirPods."""
-        assert "AirPods" in readme_content, "Should mention AirPods"
+    def test_mentions_fn_key(self, readme_content):
+        """Usage should mention Fn/Globe key."""
+        assert "Fn" in readme_content or "Globe" in readme_content, "Should mention Fn/Globe key"
 
-    def test_mentions_mute_unmute(self, readme_content):
-        """Usage should explain mute/unmute gestures."""
+    def test_mentions_hold_release(self, readme_content):
+        """Usage should explain hold/release gestures."""
         content_lower = readme_content.lower()
-        assert "unmute" in content_lower and "mute" in content_lower, \
-            "Should explain mute/unmute gestures"
+        assert "hold" in content_lower and "release" in content_lower, \
+            "Should explain hold/release gestures"
 
     def test_mentions_recording(self, readme_content):
         """Usage should mention recording."""

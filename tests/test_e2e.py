@@ -1,16 +1,16 @@
 """
 End-to-End Integration Tests for HandFree.
 
-Tests cover the complete application flow from mute detection to text output.
+Tests cover the complete application flow from hotkey detection to text output.
 These tests verify component integration and the full transcription pipeline.
 
 Test coverage for Step 8 of the implementation plan:
-- 8.1 Test basic flow: unmute -> speak -> mute -> text appears
-- 8.2 Test empty recording: unmute -> immediately mute
+- 8.1 Test basic flow: press Fn -> speak -> release Fn -> text appears
+- 8.2 Test empty recording: press -> immediately release
 - 8.3 Test long recording: 60 seconds of speech
 - 8.4 Test special characters: punctuation preserved
 - 8.5 Test quick succession: multiple cycles
-- 8.6 Test no AirPods: graceful error message
+- 8.6 Test detector error: graceful error message
 """
 
 import io
@@ -79,7 +79,7 @@ class TestE2EBasicFlow:
     @pytest.fixture
     def mock_app(self):
         """Create a HandFreeApp with fully mocked dependencies."""
-        with patch('main.MuteDetector') as mock_detector, \
+        with patch('main.HotkeyDetector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
@@ -104,8 +104,8 @@ class TestE2EBasicFlow:
         # Initial state
         assert mock_app.state == AppState.IDLE
 
-        # Step 1: User unmutes AirPods
-        mock_app.handle_unmute()
+        # Step 1: User presses Fn key
+        mock_app.handle_start()
         assert mock_app.state == AppState.RECORDING
         mock_app.recorder.start_recording.assert_called_once()
 
@@ -115,8 +115,8 @@ class TestE2EBasicFlow:
         mock_app.recorder.stop_recording.return_value = test_audio
         mock_app.transcriber.transcribe.return_value = "Hello world, this is a test."
 
-        # Step 3: User mutes AirPods
-        mock_app.handle_mute()
+        # Step 3: User releases Fn key
+        mock_app.handle_stop()
 
         # Verify all components were called correctly
         mock_app.recorder.stop_recording.assert_called_once()
@@ -152,7 +152,7 @@ class TestE2EBasicFlow:
             mock_app.transcriber.transcribe.return_value = expected_text
             mock_app.output.reset_mock()
 
-            mock_app.handle_mute()
+            mock_app.handle_stop()
 
             # Verify exact text was passed to output
             mock_app.output.output.assert_called_once_with(
@@ -168,7 +168,7 @@ class TestE2EBasicFlow:
         mock_app.recorder.stop_recording.return_value = create_test_audio()
         mock_app.transcriber.transcribe.return_value = "English text"
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         mock_app.transcriber.transcribe.assert_called_once_with(
             mock_app.recorder.stop_recording.return_value,
@@ -183,7 +183,7 @@ class TestE2EBasicFlow:
         mock_app.recorder.stop_recording.return_value = create_test_audio()
         mock_app.transcriber.transcribe.return_value = "Pasted text"
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         mock_app.output.output.assert_called_once_with(
             "Pasted text",
@@ -206,7 +206,7 @@ class TestE2EEmptyRecording:
     @pytest.fixture
     def mock_app(self):
         """Create a HandFreeApp with mocked dependencies."""
-        with patch('main.MuteDetector') as mock_detector, \
+        with patch('main.HotkeyDetector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
@@ -226,7 +226,7 @@ class TestE2EEmptyRecording:
         mock_app.recorder.stop_recording.return_value = b""
 
         # Should not raise any exception
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         # Transcriber should NOT be called with empty audio
         mock_app.transcriber.transcribe.assert_not_called()
@@ -239,7 +239,7 @@ class TestE2EEmptyRecording:
         mock_app.recorder.get_duration.return_value = 0.05  # 50ms, below 100ms threshold
         mock_app.recorder.stop_recording.return_value = create_test_audio(0.05)
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         mock_app.transcriber.transcribe.assert_not_called()
         assert mock_app.state == AppState.IDLE
@@ -251,7 +251,7 @@ class TestE2EEmptyRecording:
         mock_app.recorder.get_duration.return_value = duration
         mock_app.recorder.stop_recording.return_value = create_test_audio(max(duration, 0.001))
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         mock_app.transcriber.transcribe.assert_not_called()
         assert mock_app.state == AppState.IDLE
@@ -259,14 +259,14 @@ class TestE2EEmptyRecording:
     def test_immediate_mute_after_unmute(self, mock_app):
         """Simulates rapid unmute->mute sequence."""
         # Start recording
-        mock_app.handle_unmute()
+        mock_app.handle_start()
         assert mock_app.state == AppState.RECORDING
 
         # Immediately mute with no audio captured
         mock_app.recorder.get_duration.return_value = 0.0
         mock_app.recorder.stop_recording.return_value = b""
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         mock_app.transcriber.transcribe.assert_not_called()
         assert mock_app.state == AppState.IDLE
@@ -275,7 +275,7 @@ class TestE2EEmptyRecording:
         """Muting when not recording does nothing."""
         assert mock_app.state == AppState.IDLE
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         mock_app.recorder.stop_recording.assert_not_called()
         mock_app.transcriber.transcribe.assert_not_called()
@@ -297,7 +297,7 @@ class TestE2ELongRecording:
     @pytest.fixture
     def mock_app(self):
         """Create a HandFreeApp with mocked dependencies."""
-        with patch('main.MuteDetector') as mock_detector, \
+        with patch('main.HotkeyDetector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
@@ -320,7 +320,7 @@ class TestE2ELongRecording:
         mock_app.recorder.stop_recording.return_value = create_test_audio(1.0)  # Use 1s for test speed
         mock_app.transcriber.transcribe.return_value = "This is a long transcription with many words spoken over 60 seconds."
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         mock_app.transcriber.transcribe.assert_called_once()
         mock_app.output.output.assert_called_once()
@@ -334,7 +334,7 @@ class TestE2ELongRecording:
         mock_app.recorder.stop_recording.return_value = create_test_audio(1.0)
         mock_app.transcriber.transcribe.return_value = f"Text for {duration}s recording"
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         mock_app.transcriber.transcribe.assert_called_once()
         mock_app.output.output.assert_called_once_with(
@@ -350,7 +350,7 @@ class TestE2ELongRecording:
         mock_app.recorder.stop_recording.return_value = create_test_audio(1.0)
         mock_app.transcriber.transcribe.return_value = "Five minutes of speech."
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         mock_app.transcriber.transcribe.assert_called_once()
         assert mock_app.state == AppState.IDLE
@@ -371,7 +371,7 @@ class TestE2ESpecialCharacters:
     @pytest.fixture
     def mock_app(self):
         """Create a HandFreeApp with mocked dependencies."""
-        with patch('main.MuteDetector') as mock_detector, \
+        with patch('main.HotkeyDetector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
@@ -428,7 +428,7 @@ class TestE2ESpecialCharacters:
         mock_app.recorder.stop_recording.return_value = create_test_audio()
         mock_app.transcriber.transcribe.return_value = text
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         # Verify exact text preservation
         mock_app.output.output.assert_called_once_with(text, use_paste=False)
@@ -440,7 +440,7 @@ class TestE2ESpecialCharacters:
         mock_app.recorder.stop_recording.return_value = create_test_audio()
         mock_app.transcriber.transcribe.return_value = ""
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         # Output should NOT be called for empty transcription
         mock_app.output.output.assert_not_called()
@@ -453,7 +453,7 @@ class TestE2ESpecialCharacters:
         mock_app.recorder.stop_recording.return_value = create_test_audio()
         mock_app.transcriber.transcribe.return_value = "   "  # Only spaces
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         # Note: Current implementation outputs whitespace-only text
         # This test documents current behavior
@@ -475,7 +475,7 @@ class TestE2EQuickSuccession:
     @pytest.fixture
     def mock_app(self):
         """Create a HandFreeApp with mocked dependencies."""
-        with patch('main.MuteDetector') as mock_detector, \
+        with patch('main.HotkeyDetector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
@@ -505,7 +505,7 @@ class TestE2EQuickSuccession:
             assert mock_app.state == AppState.IDLE
 
             # Unmute
-            mock_app.handle_unmute()
+            mock_app.handle_start()
             assert mock_app.state == AppState.RECORDING
             mock_app.recorder.start_recording.assert_called_once()
 
@@ -515,7 +515,7 @@ class TestE2EQuickSuccession:
             mock_app.transcriber.transcribe.return_value = expected_text
 
             # Mute
-            mock_app.handle_mute()
+            mock_app.handle_stop()
 
             assert mock_app.state == AppState.IDLE
             mock_app.output.output.assert_called_once_with(expected_text, use_paste=False)
@@ -527,14 +527,14 @@ class TestE2EQuickSuccession:
         for i in range(num_cycles):
             mock_app._state = AppState.IDLE
 
-            mock_app.handle_unmute()
+            mock_app.handle_start()
             assert mock_app.state == AppState.RECORDING
 
             mock_app.recorder.get_duration.return_value = 0.5
             mock_app.recorder.stop_recording.return_value = create_test_audio()
             mock_app.transcriber.transcribe.return_value = f"Cycle {i+1}"
 
-            mock_app.handle_mute()
+            mock_app.handle_stop()
             assert mock_app.state == AppState.IDLE
 
         # Verify all cycles completed
@@ -545,12 +545,12 @@ class TestE2EQuickSuccession:
     def test_unmute_while_recording_restarts(self, mock_app):
         """Unmuting while already recording restarts the recording."""
         # First unmute
-        mock_app.handle_unmute()
+        mock_app.handle_start()
         assert mock_app.state == AppState.RECORDING
         assert mock_app.recorder.start_recording.call_count == 1
 
         # Second unmute (restart)
-        mock_app.handle_unmute()
+        mock_app.handle_start()
         assert mock_app.state == AppState.RECORDING
         assert mock_app.recorder.start_recording.call_count == 2
 
@@ -558,7 +558,7 @@ class TestE2EQuickSuccession:
         """Unmute events during transcription are ignored."""
         mock_app._state = AppState.TRANSCRIBING
 
-        mock_app.handle_unmute()
+        mock_app.handle_start()
 
         # Should remain in TRANSCRIBING state
         assert mock_app.state == AppState.TRANSCRIBING
@@ -567,12 +567,12 @@ class TestE2EQuickSuccession:
     def test_cycle_with_error_then_success(self, mock_app):
         """Recovery after transcription error in previous cycle."""
         # First cycle - fails
-        mock_app.handle_unmute()
+        mock_app.handle_start()
         mock_app.recorder.get_duration.return_value = 2.0
         mock_app.recorder.stop_recording.return_value = create_test_audio()
         mock_app.transcriber.transcribe.side_effect = TranscriptionError("API error")
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
         assert mock_app.state == AppState.IDLE
         mock_app.output.output.assert_not_called()
 
@@ -580,21 +580,21 @@ class TestE2EQuickSuccession:
         mock_app.transcriber.transcribe.side_effect = None
         mock_app.transcriber.transcribe.return_value = "Success after failure"
 
-        mock_app.handle_unmute()
+        mock_app.handle_start()
         mock_app.recorder.get_duration.return_value = 2.0
         mock_app.recorder.stop_recording.return_value = create_test_audio()
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         assert mock_app.state == AppState.IDLE
         mock_app.output.output.assert_called_once_with("Success after failure", use_paste=False)
 
 
-class TestE2ENoAirPods:
+class TestE2EDetectorErrors:
     """
-    Test 8.6: No AirPods - graceful error handling.
+    Test 8.6: Detector error - graceful error handling.
 
-    Verifies graceful handling when AirPods are not connected or mute detection fails.
+    Verifies graceful handling when hotkey detection fails.
     """
 
     @pytest.fixture(autouse=True)
@@ -602,39 +602,39 @@ class TestE2ENoAirPods:
         """Set up required environment variables."""
         monkeypatch.setenv("GROQ_API_KEY", "test-api-key")
 
-    def test_mute_detector_init_failure(self, monkeypatch):
-        """Graceful handling when MuteDetector fails to initialize."""
-        with patch('main.MuteDetector') as mock_detector, \
+    def test_hotkey_detector_init_failure(self, monkeypatch):
+        """Graceful handling when HotkeyDetector fails to initialize."""
+        with patch('main.HotkeyDetector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
 
-            mock_detector.side_effect = MuteDetectionError("No AirPods connected")
+            mock_detector.side_effect = RuntimeError("Failed to create event tap")
 
-            with pytest.raises(MuteDetectionError) as exc_info:
-                HandFreeApp(api_key="test-key", use_hotkey=False)
+            with pytest.raises(RuntimeError) as exc_info:
+                HandFreeApp(api_key="test-key")
 
-            assert "No AirPods connected" in str(exc_info.value)
+            assert "Failed to create event tap" in str(exc_info.value)
 
-    def test_mute_detector_start_failure(self, monkeypatch):
-        """Graceful handling when MuteDetector.start() fails."""
-        with patch('main.MuteDetector') as mock_detector_class, \
+    def test_hotkey_detector_start_failure(self, monkeypatch):
+        """Graceful handling when HotkeyDetector.start() fails."""
+        with patch('main.HotkeyDetector') as mock_detector_class, \
              patch('main.AudioRecorder') as mock_recorder, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
 
             mock_detector = Mock()
             mock_detector_class.return_value = mock_detector
-            mock_detector.start.side_effect = MuteDetectionError("Failed to start mute detection")
+            mock_detector.start.side_effect = RuntimeError("Failed to start hotkey detection")
 
-            app = HandFreeApp(api_key="test-key", use_hotkey=False)
+            app = HandFreeApp(api_key="test-key")
 
-            with pytest.raises(MuteDetectionError):
+            with pytest.raises(RuntimeError):
                 app.run()
 
     def test_audio_recorder_failure(self, monkeypatch):
         """Graceful handling when audio recording fails."""
-        with patch('main.MuteDetector') as mock_detector, \
+        with patch('main.HotkeyDetector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder_class, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
@@ -642,11 +642,11 @@ class TestE2ENoAirPods:
             mock_recorder_class.side_effect = AudioRecordingError("No audio device")
 
             with pytest.raises(AudioRecordingError):
-                HandFreeApp(api_key="test-key", use_hotkey=False)
+                HandFreeApp(api_key="test-key")
 
     def test_transcription_api_failure(self, monkeypatch):
         """Graceful handling when transcription API fails."""
-        with patch('main.MuteDetector') as mock_detector, \
+        with patch('main.HotkeyDetector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
@@ -663,14 +663,14 @@ class TestE2ENoAirPods:
             app.transcriber.transcribe.side_effect = TranscriptionError("API unavailable")
 
             # Should not raise, should handle gracefully
-            app.handle_mute()
+            app.handle_stop()
 
             assert app.state == AppState.IDLE
             app.output.output.assert_not_called()
 
     def test_output_handler_failure(self, monkeypatch):
         """Graceful handling when output handler fails."""
-        with patch('main.MuteDetector') as mock_detector, \
+        with patch('main.HotkeyDetector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
@@ -688,7 +688,7 @@ class TestE2ENoAirPods:
             app.output.output.side_effect = OutputError("Typing failed")
 
             # Should not raise, should handle gracefully
-            app.handle_mute()
+            app.handle_stop()
 
             assert app.state == AppState.IDLE
 
@@ -742,7 +742,7 @@ class TestE2EPropertyBased:
     @pytest.fixture
     def mock_app(self):
         """Create a HandFreeApp with mocked dependencies."""
-        with patch('main.MuteDetector') as mock_detector, \
+        with patch('main.HotkeyDetector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
@@ -775,9 +775,9 @@ class TestE2EPropertyBased:
 
         for event in event_sequence:
             if event == "unmute":
-                mock_app.handle_unmute()
+                mock_app.handle_start()
             else:
-                mock_app.handle_mute()
+                mock_app.handle_stop()
 
             assert mock_app.state in valid_states
 
@@ -798,7 +798,7 @@ class TestE2EPropertyBased:
         mock_app.recorder.stop_recording.return_value = create_test_audio()
         mock_app.transcriber.transcribe.return_value = "Transcribed"
 
-        mock_app.handle_mute()
+        mock_app.handle_stop()
 
         mock_app.transcriber.transcribe.assert_called_once()
         mock_app.output.output.assert_called_once()
@@ -821,7 +821,7 @@ class TestE2EPropertyBased:
             mock_app.recorder.stop_recording.return_value = create_test_audio()
             mock_app.transcriber.transcribe.return_value = scenario["text"]
 
-            mock_app.handle_mute()
+            mock_app.handle_stop()
 
             assert mock_app.state == AppState.IDLE
 
@@ -839,7 +839,7 @@ class TestE2EPropertyBased:
             mock_app.recorder.stop_recording.return_value = create_test_audio()
             mock_app.transcriber.transcribe.side_effect = error
 
-            mock_app.handle_mute()
+            mock_app.handle_stop()
 
             assert mock_app.state == AppState.IDLE
 
@@ -858,7 +858,7 @@ class TestE2EGracefulShutdown:
     @pytest.fixture
     def mock_app(self):
         """Create a HandFreeApp with mocked dependencies."""
-        with patch('main.MuteDetector') as mock_detector, \
+        with patch('main.HotkeyDetector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
              patch('main.Transcriber') as mock_transcriber, \
              patch('main.OutputHandler') as mock_output:
@@ -927,7 +927,7 @@ class TestE2EGracefulShutdown:
 @pytest.mark.integration
 class TestE2EHardwareIntegration:
     """
-    Integration tests that require actual hardware (AirPods, microphone).
+    Integration tests that require actual hardware (microphone).
 
     These tests are marked with @pytest.mark.integration and skipped by default.
     Run with: pytest -m integration
@@ -936,10 +936,10 @@ class TestE2EHardwareIntegration:
     @pytest.fixture(autouse=True)
     def check_hardware(self):
         """Skip if required hardware is not available."""
-        pytest.skip("Hardware integration tests - run manually with connected AirPods")
+        pytest.skip("Hardware integration tests - run manually with microphone")
 
-    def test_real_mute_detection(self):
-        """Test actual mute detection with connected AirPods."""
+    def test_real_hotkey_detection(self):
+        """Test actual Fn key detection."""
         pass  # Placeholder for manual testing
 
     def test_real_audio_recording(self):

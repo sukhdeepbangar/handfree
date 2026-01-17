@@ -9,7 +9,6 @@ Fast speech-to-text for macOS. Hold the **Fn/Globe key** to record, release to t
 - **Auto-typing**: Transcribed text is typed at your cursor position
 - **Clipboard backup**: Text is also copied to clipboard as fallback
 - **Language support**: Auto-detects language or specify manually
-- **AirPods mode**: Optional mute gesture control (requires active call)
 
 ## Requirements
 
@@ -63,8 +62,6 @@ Get your free API key at [console.groq.com/keys](https://console.groq.com/keys)
 
 ## Usage
 
-### Basic Usage (Fn Key Mode - Default)
-
 1. Run the application:
 
 ```bash
@@ -75,10 +72,6 @@ python main.py
 3. **Hold Fn/Globe key** - Recording starts
 4. Speak while holding
 5. **Release Fn key** - Recording stops, text is transcribed and typed
-
-### AirPods Mode (Optional)
-
-Set `HANDFREE_USE_HOTKEY=false` to use AirPods mute gesture instead (only works during active calls like FaceTime).
 
 ### State Flow
 
@@ -95,7 +88,6 @@ IDLE --[press Fn]--> RECORDING --[release Fn]--> TRANSCRIBING --> IDLE
 | `HANDFREE_TYPE_DELAY` | No | 0 | Delay between keystrokes in seconds |
 | `HANDFREE_SAMPLE_RATE` | No | 16000 | Audio sample rate in Hz |
 | `HANDFREE_USE_PASTE` | No | false | Use clipboard paste instead of keystrokes |
-| `HANDFREE_USE_HOTKEY` | No | true | Use Option+Space hotkey (false = AirPods mute gesture) |
 
 Example `.env` file:
 
@@ -120,7 +112,7 @@ If you missed the prompt or need to re-enable:
 
 ### 2. Accessibility Access
 
-Required for typing text into applications.
+Required for typing text into applications and detecting the Fn key.
 
 To grant accessibility access:
 1. Open **System Settings**
@@ -137,13 +129,15 @@ After granting permissions, restart the terminal and run HandFree again. You sho
 
 ```
 =======================================================
-  HandFree - AirPods-Triggered Speech-to-Text
+  HandFree - Speech-to-Text
 =======================================================
 
+  Mode: HOTKEY (Fn/Globe key)
+
   Usage:
-    1. UNMUTE AirPods (press stem) -> Start recording
-    2. Speak your text
-    3. MUTE AirPods (press stem)   -> Transcribe & type
+    1. HOLD Fn key            -> Recording starts
+    2. Speak while holding
+    3. RELEASE Fn key         -> Transcribes & types
 
   Press Ctrl+C to exit
 =======================================================
@@ -164,18 +158,6 @@ Or export it directly:
 ```bash
 export GROQ_API_KEY=your_key_here
 ```
-
-### Mute detection not working
-
-**Possible causes:**
-- AirPods not connected or not selected as input device
-- Unsupported AirPods model (needs 2nd gen or later)
-- macOS version too old (needs macOS 14+)
-
-**Solutions:**
-1. Ensure AirPods are connected and selected as input in System Settings > Sound
-2. Try pressing and **holding** the stem briefly (different models behave differently)
-3. Check that you're on macOS 14 (Sonoma) or later
 
 ### Text not typing into application
 
@@ -198,7 +180,7 @@ export GROQ_API_KEY=your_key_here
 - Network issues
 
 **Solutions:**
-1. Speak clearly at a normal pace, close to the AirPods microphone
+1. Speak clearly at a normal pace
 2. Check that your Groq API key is valid
 3. Verify internet connection
 4. Try setting a specific language: `HANDFREE_LANGUAGE=en`
@@ -246,7 +228,7 @@ handfree/
 ├── main.py                     # Application entry point
 ├── src/handfree/
 │   ├── __init__.py
-│   ├── mute_detector.py        # AirPods mute state detection
+│   ├── hotkey_detector.py      # Fn key detection via CGEvent
 │   ├── audio_recorder.py       # Microphone audio capture
 │   ├── transcriber.py          # Groq Whisper API client
 │   ├── output_handler.py       # Clipboard + auto-typing
@@ -262,7 +244,7 @@ handfree/
 
 ## How It Works
 
-1. **Mute Detection** (`mute_detector.py`): Uses macOS AVAudioApplication API to detect AirPods mute/unmute gestures via `inputMuteStateChangeNotification`
+1. **Hotkey Detection** (`hotkey_detector.py`): Uses macOS CGEventTap API to detect Fn/Globe key press and release events
 
 2. **Audio Recording** (`audio_recorder.py`): Captures audio from the microphone using `sounddevice` library, storing in memory as 16-bit mono WAV at 16kHz
 
@@ -278,4 +260,3 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 - [Groq](https://groq.com) for lightning-fast Whisper API
 - [OpenAI Whisper](https://github.com/openai/whisper) for the speech recognition model
-- Apple for AirPods mute gesture API

@@ -1,7 +1,7 @@
 """
-HandFree - AirPods-Triggered Speech-to-Text
+HandFree - Speech-to-Text
 
-A macOS Python application that uses AirPods mute/unmute gestures
+A macOS Python application that uses the Fn/Globe key
 to trigger fast speech-to-text transcription via Groq Whisper API.
 """
 
