@@ -224,10 +224,10 @@ This plan implements two features in priority order:
 - [x] 5.1.8 Add 75+ unit tests for new configuration (test_config.py)
 
 ### Step 5.2: UI Refinements
-- [ ] 5.2.1 Add success/error flash animation (brief green/red, then fade)
-- [ ] 5.2.2 Platform-specific transparency handling
-- [ ] 5.2.3 Ensure UI works on multi-monitor setups (use primary display)
-- [ ] 5.2.4 Add keyboard shortcut hints in history panel
+- [x] 5.2.1 Add success/error flash animation (brief green/red, then fade)
+- [x] 5.2.2 Platform-specific transparency handling
+- [x] 5.2.3 Ensure UI works on multi-monitor setups (use primary display)
+- [x] 5.2.4 Add keyboard shortcut hints in history panel
 
 ### Step 5.3: Error Handling
 - [x] 5.3.1 Graceful degradation if UI fails to initialize
@@ -300,4 +300,4 @@ This plan implements two features in priority order:
 | Phase 2: Transcription History | Complete | JSONL-based storage, history panel UI, integrated with main app |
 | Phase 3: Platform Abstraction | Complete | Platform factory with macOS/Windows/Linux implementations, 43 new tests |
 | Phase 4: Windows/Linux Support | Complete | Implementations done, dependencies updated (4.4), pending: xdotool fallback (4.3.3), VM testing (4.5) |
-| Phase 5: Polish | In Progress | Step 5.1 (Configuration) complete with 75+ tests; Step 5.3 (Error Handling) complete with 38 new tests; remaining: UI refinements (5.2), documentation (5.4), final testing (5.5) |
+| Phase 5: Polish | In Progress | Step 5.1 (Configuration) complete with 75+ tests; Step 5.2 (UI Refinements) complete with 29 new tests; Step 5.3 (Error Handling) complete with 38 new tests; remaining: documentation (5.4), final testing (5.5) |

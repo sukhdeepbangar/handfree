@@ -4,12 +4,24 @@ Recording Indicator Component
 Provides a minimal, always-on-top visual indicator showing the application state.
 """
 
+import sys
 import tkinter as tk
-from typing import Optional
+from typing import Optional, List
 
 
 # Valid position values
 VALID_POSITIONS = ["top-center", "top-right", "top-left", "bottom-center", "bottom-right", "bottom-left"]
+
+
+def get_current_platform() -> str:
+    """Detect the current platform."""
+    if sys.platform == "darwin":
+        return "macos"
+    elif sys.platform == "win32":
+        return "windows"
+    elif sys.platform.startswith("linux"):
+        return "linux"
+    return "unknown"
 
 
 class RecordingIndicator:
@@ -20,8 +32,8 @@ class RecordingIndicator:
     - idle: Hidden or very dim (dark gray)
     - recording: Red with "REC" text
     - transcribing: Orange with "..." text
-    - success: Green with "OK" text (flashes briefly)
-    - error: Red with "ERR" text (flashes briefly)
+    - success: Green with "OK" text (flashes briefly with animation)
+    - error: Red with "ERR" text (flashes briefly with animation)
     """
 
     # State configuration: (bg_color, text_color, display_text, opacity)
@@ -35,6 +47,11 @@ class RecordingIndicator:
 
     # Margin from screen edges in pixels
     EDGE_MARGIN = 10
+
+    # Flash animation configuration
+    FLASH_DURATION_MS = 1500  # Total duration before returning to idle
+    FLASH_STEPS = 6  # Number of animation steps
+    FLASH_INTERVAL_MS = 100  # Time between animation steps
 
     def __init__(
         self,
@@ -56,8 +73,10 @@ class RecordingIndicator:
         self.width = width
         self.height = height
         self._current_state = "idle"
-        self._flash_after_id = None
+        self._flash_after_ids: List[str] = []  # Track all animation scheduled callbacks
         self._position = position if position in VALID_POSITIONS else "top-center"
+        self._platform = get_current_platform()
+        self._transparency_supported = True
 
         # Create window if root not provided (for testing purposes)
         if root is None:
@@ -70,17 +89,8 @@ class RecordingIndicator:
         self.window.overrideredirect(True)  # No window decorations
         self.window.attributes("-topmost", True)  # Always on top
 
-        # Platform-specific transparency
-        try:
-            # macOS
-            self.window.attributes("-alpha", 0.3)
-        except tk.TclError:
-            try:
-                # Windows
-                self.window.attributes("-transparentcolor", "white")
-            except tk.TclError:
-                # Linux - transparency might not work everywhere
-                pass
+        # Platform-specific transparency setup
+        self._setup_transparency()
 
         # Create canvas for drawing
         self.canvas = tk.Canvas(
@@ -95,28 +105,92 @@ class RecordingIndicator:
         # Draw initial state
         self._draw_state()
 
-        # Position window at top-center
+        # Position window on primary display
         self._position_window()
 
-    def _position_window(self) -> None:
-        """Position window based on configured position."""
-        # Get screen dimensions
+    def _setup_transparency(self) -> None:
+        """Configure platform-specific window transparency."""
+        try:
+            if self._platform == "macos":
+                # macOS: Full alpha channel support
+                self.window.attributes("-alpha", 0.3)
+            elif self._platform == "windows":
+                # Windows: Use alpha attribute (works on Windows 7+)
+                try:
+                    self.window.attributes("-alpha", 0.3)
+                except tk.TclError:
+                    # Fallback: transparent color key (older Windows)
+                    self.window.attributes("-transparentcolor", "white")
+            elif self._platform == "linux":
+                # Linux: Alpha support varies by compositor
+                # Works on most modern compositors (Picom, Mutter, KWin)
+                try:
+                    self.window.attributes("-alpha", 0.3)
+                except tk.TclError:
+                    # Transparency not available on this setup
+                    self._transparency_supported = False
+            else:
+                self._transparency_supported = False
+        except tk.TclError:
+            self._transparency_supported = False
+
+    def _get_primary_display_geometry(self) -> tuple:
+        """
+        Get the geometry of the primary display for multi-monitor support.
+
+        Returns:
+            Tuple of (x_offset, y_offset, width, height) for the primary display.
+        """
+        # Force window update to ensure geometry info is available
+        self.window.update_idletasks()
+
+        # Get virtual screen dimensions (all monitors combined)
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
 
+        # Try to get the root window position to determine primary display
+        # On multi-monitor setups, winfo_screenwidth/height gives virtual size
+        # We use winfo_vrootx/vrooty to get offset to the virtual root
+        try:
+            # Get virtual root offset (for multi-monitor)
+            vroot_x = self.window.winfo_vrootx()
+            vroot_y = self.window.winfo_vrooty()
+
+            # If we can get real root geometry, use it
+            # This handles cases where primary display isn't at (0,0)
+            if vroot_x != 0 or vroot_y != 0:
+                # We're in a virtual root situation
+                return (vroot_x, vroot_y, screen_width, screen_height)
+        except tk.TclError:
+            pass
+
+        # Default: assume primary display starts at (0, 0)
+        # This is the most common case for single-monitor and
+        # for primary monitor on left in multi-monitor setups
+        return (0, 0, screen_width, screen_height)
+
+    def _position_window(self) -> None:
+        """
+        Position window based on configured position.
+
+        Handles multi-monitor setups by positioning on the primary display.
+        """
+        # Get primary display geometry
+        display_x, display_y, screen_width, screen_height = self._get_primary_display_geometry()
+
         # Calculate x position based on horizontal alignment
         if "center" in self._position:
-            x = (screen_width - self.width) // 2
+            x = display_x + (screen_width - self.width) // 2
         elif "right" in self._position:
-            x = screen_width - self.width - self.EDGE_MARGIN
+            x = display_x + screen_width - self.width - self.EDGE_MARGIN
         else:  # left
-            x = self.EDGE_MARGIN
+            x = display_x + self.EDGE_MARGIN
 
         # Calculate y position based on vertical alignment
         if self._position.startswith("top"):
-            y = self.EDGE_MARGIN
+            y = display_y + self.EDGE_MARGIN
         else:  # bottom
-            y = screen_height - self.height - self.EDGE_MARGIN
+            y = display_y + screen_height - self.height - self.EDGE_MARGIN
 
         self.window.geometry(f"{self.width}x{self.height}+{x}+{y}")
 
@@ -138,12 +212,18 @@ class RecordingIndicator:
         self._position = position
         self._position_window()
 
-    def _draw_state(self) -> None:
-        """Draw the current state on the canvas."""
+    def _draw_state(self, opacity_override: Optional[float] = None) -> None:
+        """
+        Draw the current state on the canvas.
+
+        Args:
+            opacity_override: Optional opacity to use instead of state default
+        """
         if self._current_state not in self.STATE_CONFIG:
             return
 
-        bg_color, text_color, text, opacity = self.STATE_CONFIG[self._current_state]
+        bg_color, text_color, text, base_opacity = self.STATE_CONFIG[self._current_state]
+        opacity = opacity_override if opacity_override is not None else base_opacity
 
         # Clear canvas
         self.canvas.delete("all")
@@ -166,11 +246,57 @@ class RecordingIndicator:
                 font=("Arial", 10, "bold")
             )
 
-        # Update opacity
-        try:
-            self.window.attributes("-alpha", opacity)
-        except tk.TclError:
-            pass
+        # Update opacity if transparency is supported
+        if self._transparency_supported:
+            try:
+                self.window.attributes("-alpha", opacity)
+            except tk.TclError:
+                pass
+
+    def _cancel_animations(self) -> None:
+        """Cancel all pending animation callbacks."""
+        for after_id in self._flash_after_ids:
+            try:
+                self.window.after_cancel(after_id)
+            except (tk.TclError, ValueError):
+                pass
+        self._flash_after_ids.clear()
+
+    def _schedule_flash_animation(self) -> None:
+        """
+        Schedule a flash animation for success/error states.
+
+        The animation pulses the opacity before fading to idle.
+        """
+        # Flash animation: pulse then fade
+        # Step 0-2: Pulse bright (0.95)
+        # Step 3-5: Fade out gradually
+        fade_opacities = [0.95, 0.85, 0.95, 0.75, 0.55, 0.35]
+
+        def animate_step(step: int) -> None:
+            if step < len(fade_opacities):
+                # Update opacity for fade effect
+                if self._transparency_supported:
+                    try:
+                        self.window.attributes("-alpha", fade_opacities[step])
+                    except tk.TclError:
+                        pass
+                # Schedule next step
+                after_id = self.window.after(
+                    self.FLASH_INTERVAL_MS,
+                    lambda: animate_step(step + 1)
+                )
+                self._flash_after_ids.append(after_id)
+            else:
+                # Animation complete, return to idle
+                self.set_state("idle")
+
+        # Start animation after a brief pause showing the state
+        after_id = self.window.after(
+            self.FLASH_DURATION_MS - (len(fade_opacities) * self.FLASH_INTERVAL_MS),
+            lambda: animate_step(0)
+        )
+        self._flash_after_ids.append(after_id)
 
     def set_state(self, state: str) -> None:
         """
@@ -182,10 +308,8 @@ class RecordingIndicator:
         if state not in self.STATE_CONFIG:
             raise ValueError(f"Invalid state: {state}. Must be one of {list(self.STATE_CONFIG.keys())}")
 
-        # Cancel any pending flash
-        if self._flash_after_id:
-            self.window.after_cancel(self._flash_after_id)
-            self._flash_after_id = None
+        # Cancel any pending animations
+        self._cancel_animations()
 
         self._current_state = state
         self._draw_state()
@@ -196,10 +320,9 @@ class RecordingIndicator:
         else:
             self.show()
 
-        # Flash effect for success/error states
+        # Flash animation for success/error states
         if state in ("success", "error"):
-            # Auto-return to idle after 1.5 seconds
-            self._flash_after_id = self.window.after(1500, lambda: self.set_state("idle"))
+            self._schedule_flash_animation()
 
     def show(self) -> None:
         """Show the indicator window."""
@@ -210,8 +333,20 @@ class RecordingIndicator:
         """Hide the indicator window."""
         self.window.withdraw()
 
+    @property
+    def transparency_supported(self) -> bool:
+        """Whether window transparency is supported on this platform."""
+        return self._transparency_supported
+
+    @property
+    def platform(self) -> str:
+        """The detected platform (macos, windows, linux, unknown)."""
+        return self._platform
+
     def destroy(self) -> None:
         """Destroy the indicator window."""
-        if self._flash_after_id:
-            self.window.after_cancel(self._flash_after_id)
-        self.window.destroy()
+        self._cancel_animations()
+        try:
+            self.window.destroy()
+        except tk.TclError:
+            pass

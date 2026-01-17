@@ -431,3 +431,291 @@ class TestHandFreeUIPosition:
 
         ui = HandFreeUI(indicator_position=position)
         assert ui._indicator_position == position
+
+
+class TestFlashAnimation:
+    """Tests for flash animation functionality (Step 5.2.1)."""
+
+    def test_flash_duration_constant_exists(self):
+        """Test that FLASH_DURATION_MS constant exists."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        assert hasattr(RecordingIndicator, 'FLASH_DURATION_MS')
+        assert RecordingIndicator.FLASH_DURATION_MS > 0
+
+    def test_flash_steps_constant_exists(self):
+        """Test that FLASH_STEPS constant exists."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        assert hasattr(RecordingIndicator, 'FLASH_STEPS')
+        assert RecordingIndicator.FLASH_STEPS > 0
+
+    def test_flash_interval_constant_exists(self):
+        """Test that FLASH_INTERVAL_MS constant exists."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        assert hasattr(RecordingIndicator, 'FLASH_INTERVAL_MS')
+        assert RecordingIndicator.FLASH_INTERVAL_MS > 0
+
+    def test_flash_animation_timing_is_consistent(self):
+        """Test that flash animation timing adds up correctly."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        # Animation should fit within total duration
+        animation_time = RecordingIndicator.FLASH_STEPS * RecordingIndicator.FLASH_INTERVAL_MS
+        assert animation_time <= RecordingIndicator.FLASH_DURATION_MS
+
+    def test_indicator_has_cancel_animations_method(self):
+        """Test that RecordingIndicator has _cancel_animations method."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        assert hasattr(RecordingIndicator, '_cancel_animations')
+        assert callable(getattr(RecordingIndicator, '_cancel_animations'))
+
+    def test_indicator_has_schedule_flash_animation_method(self):
+        """Test that RecordingIndicator has _schedule_flash_animation method."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        assert hasattr(RecordingIndicator, '_schedule_flash_animation')
+        assert callable(getattr(RecordingIndicator, '_schedule_flash_animation'))
+
+    def test_indicator_tracks_animation_callbacks(self, mock_tkinter):
+        """Test that indicator tracks animation callback IDs."""
+        mock_window = MagicMock()
+        mock_canvas = MagicMock()
+
+        with patch('handfree.ui.indicator.tk.Toplevel', return_value=mock_window), \
+             patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas):
+            from handfree.ui.indicator import RecordingIndicator
+
+            indicator = RecordingIndicator()
+            assert hasattr(indicator, '_flash_after_ids')
+            assert isinstance(indicator._flash_after_ids, list)
+
+    @pytest.fixture
+    def mock_tkinter(self):
+        """Create comprehensive tkinter mocks."""
+        mock_window = MagicMock()
+        mock_canvas = MagicMock()
+
+        with patch('handfree.ui.indicator.tk.Toplevel', return_value=mock_window), \
+             patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas):
+            yield {'window': mock_window, 'canvas': mock_canvas}
+
+
+class TestPlatformTransparency:
+    """Tests for platform-specific transparency handling (Step 5.2.2)."""
+
+    def test_get_current_platform_function_exists(self):
+        """Test that get_current_platform function exists in indicator module."""
+        from handfree.ui.indicator import get_current_platform
+
+        assert callable(get_current_platform)
+
+    def test_get_current_platform_returns_valid_value(self):
+        """Test that get_current_platform returns a valid platform string."""
+        from handfree.ui.indicator import get_current_platform
+
+        platform = get_current_platform()
+        assert platform in ["macos", "windows", "linux", "unknown"]
+
+    def test_indicator_has_platform_property(self):
+        """Test that RecordingIndicator has platform property."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        mock_window = MagicMock()
+        mock_canvas = MagicMock()
+
+        with patch('handfree.ui.indicator.tk.Toplevel', return_value=mock_window), \
+             patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas):
+            indicator = RecordingIndicator()
+            assert hasattr(indicator, 'platform')
+            assert indicator.platform in ["macos", "windows", "linux", "unknown"]
+
+    def test_indicator_has_transparency_supported_property(self):
+        """Test that RecordingIndicator has transparency_supported property."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        mock_window = MagicMock()
+        mock_canvas = MagicMock()
+
+        with patch('handfree.ui.indicator.tk.Toplevel', return_value=mock_window), \
+             patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas):
+            indicator = RecordingIndicator()
+            assert hasattr(indicator, 'transparency_supported')
+            assert isinstance(indicator.transparency_supported, bool)
+
+    def test_indicator_has_setup_transparency_method(self):
+        """Test that RecordingIndicator has _setup_transparency method."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        assert hasattr(RecordingIndicator, '_setup_transparency')
+        assert callable(getattr(RecordingIndicator, '_setup_transparency'))
+
+    @pytest.mark.parametrize("mock_platform,expected", [
+        ("darwin", "macos"),
+        ("win32", "windows"),
+        ("linux", "linux"),
+        ("linux2", "linux"),
+        ("freebsd", "unknown"),
+    ])
+    def test_get_current_platform_detection(self, mock_platform, expected):
+        """Test platform detection for various sys.platform values."""
+        with patch('handfree.ui.indicator.sys.platform', mock_platform):
+            from handfree.ui import indicator
+            # Need to reimport to get fresh function with mocked platform
+            import importlib
+            importlib.reload(indicator)
+            assert indicator.get_current_platform() == expected
+
+
+class TestMultiMonitorSupport:
+    """Tests for multi-monitor setup support (Step 5.2.3)."""
+
+    def test_indicator_has_get_primary_display_geometry_method(self):
+        """Test that RecordingIndicator has _get_primary_display_geometry method."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        assert hasattr(RecordingIndicator, '_get_primary_display_geometry')
+        assert callable(getattr(RecordingIndicator, '_get_primary_display_geometry'))
+
+    def test_get_primary_display_geometry_returns_tuple(self):
+        """Test that _get_primary_display_geometry returns correct tuple format."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        mock_window = MagicMock()
+        mock_window.winfo_screenwidth.return_value = 1920
+        mock_window.winfo_screenheight.return_value = 1080
+        mock_window.winfo_vrootx.return_value = 0
+        mock_window.winfo_vrooty.return_value = 0
+        mock_canvas = MagicMock()
+
+        with patch('handfree.ui.indicator.tk.Toplevel', return_value=mock_window), \
+             patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas):
+            indicator = RecordingIndicator()
+            result = indicator._get_primary_display_geometry()
+
+            assert isinstance(result, tuple)
+            assert len(result) == 4
+            # Should return (x_offset, y_offset, width, height)
+            x, y, w, h = result
+            assert isinstance(x, int)
+            assert isinstance(y, int)
+            assert w == 1920
+            assert h == 1080
+
+    def test_position_window_uses_display_offset(self):
+        """Test that _position_window uses display offset for multi-monitor."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        mock_window = MagicMock()
+        mock_window.winfo_screenwidth.return_value = 3840  # Dual monitors
+        mock_window.winfo_screenheight.return_value = 1080
+        mock_window.winfo_vrootx.return_value = 1920  # Second monitor offset
+        mock_window.winfo_vrooty.return_value = 0
+        mock_canvas = MagicMock()
+
+        with patch('handfree.ui.indicator.tk.Toplevel', return_value=mock_window), \
+             patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas):
+            indicator = RecordingIndicator(position="top-center")
+
+            # Get the geometry call argument
+            geometry_call = mock_window.geometry.call_args[0][0]
+
+            # Parse geometry string: WxH+X+Y
+            import re
+            match = re.match(r'(\d+)x(\d+)\+(\d+)\+(\d+)', geometry_call)
+            assert match is not None, f"Invalid geometry format: {geometry_call}"
+
+            x = int(match.group(3))
+            # X should include display offset of 1920
+            assert x >= 1920, f"X position {x} should account for display offset"
+
+
+class TestHistoryPanelKeyboardShortcuts:
+    """Tests for keyboard shortcut hints in history panel (Step 5.2.4)."""
+
+    def test_get_modifier_key_function_exists(self):
+        """Test that _get_modifier_key function exists in history module."""
+        from handfree.ui.history import _get_modifier_key
+
+        assert callable(_get_modifier_key)
+
+    def test_get_modifier_key_returns_cmd_on_macos(self):
+        """Test that _get_modifier_key returns 'Cmd' on macOS."""
+        with patch('handfree.ui.history.sys.platform', 'darwin'):
+            from handfree.ui import history
+            import importlib
+            importlib.reload(history)
+            assert history._get_modifier_key() == "Cmd"
+
+    def test_get_modifier_key_returns_ctrl_on_windows(self):
+        """Test that _get_modifier_key returns 'Ctrl' on Windows."""
+        with patch('handfree.ui.history.sys.platform', 'win32'):
+            from handfree.ui import history
+            import importlib
+            importlib.reload(history)
+            assert history._get_modifier_key() == "Ctrl"
+
+    def test_get_modifier_key_returns_ctrl_on_linux(self):
+        """Test that _get_modifier_key returns 'Ctrl' on Linux."""
+        with patch('handfree.ui.history.sys.platform', 'linux'):
+            from handfree.ui import history
+            import importlib
+            importlib.reload(history)
+            assert history._get_modifier_key() == "Ctrl"
+
+    def test_history_panel_has_hint_color_constant(self):
+        """Test that HistoryPanel has HINT_COLOR constant."""
+        from handfree.ui.history import HistoryPanel
+
+        assert hasattr(HistoryPanel, 'HINT_COLOR')
+        assert isinstance(HistoryPanel.HINT_COLOR, str)
+
+    def test_history_panel_has_footer_height_constant(self):
+        """Test that HistoryPanel has FOOTER_HEIGHT constant."""
+        from handfree.ui.history import HistoryPanel
+
+        assert hasattr(HistoryPanel, 'FOOTER_HEIGHT')
+        assert HistoryPanel.FOOTER_HEIGHT > 0
+
+    def test_history_panel_has_create_footer_hints_method(self):
+        """Test that HistoryPanel has _create_footer_hints method."""
+        from handfree.ui.history import HistoryPanel
+
+        assert hasattr(HistoryPanel, '_create_footer_hints')
+        assert callable(getattr(HistoryPanel, '_create_footer_hints'))
+
+
+class TestDrawStateOpacityOverride:
+    """Tests for _draw_state opacity override functionality."""
+
+    def test_draw_state_accepts_opacity_override(self):
+        """Test that _draw_state accepts opacity_override parameter."""
+        import inspect
+        from handfree.ui.indicator import RecordingIndicator
+
+        sig = inspect.signature(RecordingIndicator._draw_state)
+        assert 'opacity_override' in sig.parameters
+        assert sig.parameters['opacity_override'].default is None
+
+    def test_draw_state_uses_opacity_override_when_provided(self):
+        """Test that _draw_state uses opacity_override value."""
+        from handfree.ui.indicator import RecordingIndicator
+
+        mock_window = MagicMock()
+        mock_canvas = MagicMock()
+
+        with patch('handfree.ui.indicator.tk.Toplevel', return_value=mock_window), \
+             patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas):
+            indicator = RecordingIndicator()
+            indicator._current_state = "recording"
+
+            # Reset mock to clear initialization calls
+            mock_window.attributes.reset_mock()
+
+            # Call with opacity override
+            indicator._draw_state(opacity_override=0.5)
+
+            # Should have called attributes with overridden opacity
+            mock_window.attributes.assert_called_with("-alpha", 0.5)

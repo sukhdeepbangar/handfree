@@ -4,6 +4,7 @@ History Panel Component
 Provides a scrollable panel showing transcription history with copy functionality.
 """
 
+import sys
 import tkinter as tk
 from tkinter import ttk
 from typing import Callable, List, Optional
@@ -11,11 +12,20 @@ from typing import Callable, List, Optional
 from handfree.storage.history_store import TranscriptionRecord
 
 
+def _get_modifier_key() -> str:
+    """Get the appropriate modifier key name for the current platform."""
+    if sys.platform == "darwin":
+        return "Cmd"
+    else:
+        return "Ctrl"
+
+
 class HistoryPanel:
     """
     A toggleable panel showing transcription history.
 
-    Displays recent transcriptions in a scrollable list with copy functionality.
+    Displays recent transcriptions in a scrollable list with copy functionality,
+    including keyboard shortcut hints at the bottom.
     """
 
     # UI configuration
@@ -28,6 +38,8 @@ class HistoryPanel:
     HOVER_BG = "#3D3D3D"
     TIMESTAMP_COLOR = "#888888"
     DURATION_COLOR = "#666666"
+    HINT_COLOR = "#555555"
+    FOOTER_HEIGHT = 30
 
     def __init__(
         self,
@@ -104,6 +116,48 @@ class HistoryPanel:
 
         # Create scrollable frame
         self._create_scrollable_frame()
+
+        # Create footer with keyboard shortcuts
+        self._create_footer_hints()
+
+    def _create_footer_hints(self) -> None:
+        """Create a footer with keyboard shortcut hints."""
+        modifier = _get_modifier_key()
+
+        # Footer frame with separator
+        separator = tk.Frame(self._window, bg=self.HINT_COLOR, height=1)
+        separator.pack(fill=tk.X, padx=10, pady=(5, 0))
+
+        footer_frame = tk.Frame(
+            self._window,
+            bg=self.BG_COLOR,
+            height=self.FOOTER_HEIGHT
+        )
+        footer_frame.pack(fill=tk.X, padx=10, pady=(5, 8))
+        footer_frame.pack_propagate(False)  # Maintain fixed height
+
+        # Create hints
+        hints = [
+            f"{modifier}+H: Toggle",
+            f"{modifier}+C: Copy selected",
+            "Esc: Close"
+        ]
+
+        # Display hints in a row
+        for i, hint in enumerate(hints):
+            hint_label = tk.Label(
+                footer_frame,
+                text=hint,
+                font=("Arial", 9),
+                fg=self.HINT_COLOR,
+                bg=self.BG_COLOR
+            )
+            hint_label.pack(side=tk.LEFT, padx=(0 if i == 0 else 15, 0))
+
+        # Bind keyboard shortcuts
+        self._window.bind("<Escape>", lambda e: self.hide())
+        self._window.bind(f"<{modifier.lower()}-h>", lambda e: self.toggle())
+        self._window.bind(f"<{modifier.lower()}-H>", lambda e: self.toggle())
 
     def _create_scrollable_frame(self) -> None:
         """Create a scrollable container for history entries."""

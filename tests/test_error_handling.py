@@ -255,6 +255,7 @@ class TestLoggingIntegration(unittest.TestCase):
 class TestHandFreeAppErrorHandling(unittest.TestCase):
     """Tests for HandFreeApp initialization error handling."""
 
+    @patch('main.logger')
     @patch('main.create_hotkey_detector')
     @patch('main.create_output_handler')
     @patch('main.AudioRecorder')
@@ -263,7 +264,7 @@ class TestHandFreeAppErrorHandling(unittest.TestCase):
     @patch('main.get_platform', return_value='macos')
     def test_app_continues_without_ui_on_failure(
         self, mock_platform, mock_ui, mock_transcriber,
-        mock_recorder, mock_output, mock_hotkey
+        mock_recorder, mock_output, mock_hotkey, mock_logger
     ):
         """Test app continues if UI fails to initialize."""
         from main import HandFreeApp
@@ -287,6 +288,7 @@ class TestHandFreeAppErrorHandling(unittest.TestCase):
         mock_output.assert_called_once()
         mock_hotkey.assert_called_once()
 
+    @patch('main.logger')
     @patch('main.create_hotkey_detector')
     @patch('main.create_output_handler')
     @patch('main.AudioRecorder')
@@ -294,7 +296,7 @@ class TestHandFreeAppErrorHandling(unittest.TestCase):
     @patch('main.get_platform', return_value='macos')
     def test_app_raises_on_hotkey_detector_failure(
         self, mock_platform, mock_transcriber,
-        mock_recorder, mock_output, mock_hotkey
+        mock_recorder, mock_output, mock_hotkey, mock_logger
     ):
         """Test app raises HotkeyDetectorError on hotkey detector failure."""
         from main import HandFreeApp
@@ -306,6 +308,7 @@ class TestHandFreeAppErrorHandling(unittest.TestCase):
         with self.assertRaises(HotkeyDetectorError):
             HandFreeApp(api_key="test_key", ui_enabled=False)
 
+    @patch('main.logger')
     @patch('main.create_hotkey_detector')
     @patch('main.create_output_handler')
     @patch('main.AudioRecorder')
@@ -313,7 +316,7 @@ class TestHandFreeAppErrorHandling(unittest.TestCase):
     @patch('main.get_platform', return_value='macos')
     def test_app_raises_on_output_handler_failure(
         self, mock_platform, mock_transcriber,
-        mock_recorder, mock_output, mock_hotkey
+        mock_recorder, mock_output, mock_hotkey, mock_logger
     ):
         """Test app raises OutputHandlerError on output handler failure."""
         from main import HandFreeApp
