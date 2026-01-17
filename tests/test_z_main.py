@@ -482,3 +482,287 @@ class TestExceptionsModule:
             raise TranscriptionError("Test error message")
 
         assert "Test error message" in str(exc_info.value)
+
+
+class TestStateMachineProperties:
+    """Property-based tests for state machine invariants."""
+
+    @pytest.fixture(autouse=True)
+    def setup_env(self, monkeypatch):
+        """Set up required environment variables."""
+        monkeypatch.setenv("GROQ_API_KEY", "test-api-key")
+
+    @pytest.fixture
+    def app(self):
+        """Create a HandFreeApp with mocked dependencies."""
+        with patch('main.MuteDetector') as mock_detector, \
+             patch('main.AudioRecorder') as mock_recorder, \
+             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.OutputHandler') as mock_output:
+
+            app = HandFreeApp(api_key="test-key")
+            app.recorder = Mock()
+            app.transcriber = Mock()
+            app.output = Mock()
+            app.detector = Mock()
+
+            yield app
+
+    def test_state_always_valid(self, app):
+        """State is always one of the defined AppState values."""
+        valid_states = {AppState.IDLE, AppState.RECORDING, AppState.TRANSCRIBING}
+        assert app.state in valid_states
+
+    def test_idle_to_recording_transition(self, app):
+        """IDLE -> RECORDING transition via unmute."""
+        app._state = AppState.IDLE
+        app.handle_unmute()
+        assert app.state == AppState.RECORDING
+
+    def test_recording_to_idle_via_mute(self, app):
+        """RECORDING -> IDLE transition via mute (after transcription)."""
+        app._state = AppState.RECORDING
+        app.recorder.get_duration.return_value = 1.0
+        app.recorder.stop_recording.return_value = b"audio"
+        app.transcriber.transcribe.return_value = "text"
+
+        app.handle_mute()
+        assert app.state == AppState.IDLE
+
+    def test_unmute_while_recording_restarts(self, app):
+        """Unmute while recording restarts the recording (clears buffer)."""
+        app._state = AppState.IDLE
+        app.handle_unmute()
+        assert app.state == AppState.RECORDING
+
+        # Second unmute restarts recording (useful if user wants to start over)
+        app.handle_unmute()
+        assert app.state == AppState.RECORDING
+        # Two calls to start_recording (original + restart)
+        assert app.recorder.start_recording.call_count == 2
+
+    def test_mute_without_recording_is_noop(self, app):
+        """Mute in IDLE state is a no-op."""
+        app._state = AppState.IDLE
+        app.handle_mute()
+        assert app.state == AppState.IDLE
+        app.recorder.stop_recording.assert_not_called()
+
+    @pytest.mark.parametrize("duration", [0.0, 0.01, 0.05, 0.09])
+    def test_short_recordings_rejected(self, app, duration):
+        """Recordings shorter than threshold are rejected."""
+        app._state = AppState.RECORDING
+        app.recorder.get_duration.return_value = duration
+        app.recorder.stop_recording.return_value = b"tiny"
+
+        app.handle_mute()
+
+        app.transcriber.transcribe.assert_not_called()
+        assert app.state == AppState.IDLE
+
+    @pytest.mark.parametrize("duration", [0.1, 0.5, 1.0, 5.0, 30.0, 60.0, 300.0])
+    def test_valid_recordings_transcribed(self, app, duration):
+        """Recordings at or above threshold are transcribed."""
+        app._state = AppState.RECORDING
+        app.recorder.get_duration.return_value = duration
+        app.recorder.stop_recording.return_value = b"audio-data"
+        app.transcriber.transcribe.return_value = "transcribed text"
+
+        app.handle_mute()
+
+        app.transcriber.transcribe.assert_called_once()
+        assert app.state == AppState.IDLE
+
+
+class TestStateMachineSequences:
+    """Tests for sequences of state transitions."""
+
+    @pytest.fixture(autouse=True)
+    def setup_env(self, monkeypatch):
+        """Set up required environment variables."""
+        monkeypatch.setenv("GROQ_API_KEY", "test-api-key")
+
+    @pytest.fixture
+    def app(self):
+        """Create a HandFreeApp with mocked dependencies."""
+        with patch('main.MuteDetector') as mock_detector, \
+             patch('main.AudioRecorder') as mock_recorder, \
+             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.OutputHandler') as mock_output:
+
+            app = HandFreeApp(api_key="test-key")
+            app.recorder = Mock()
+            app.transcriber = Mock()
+            app.output = Mock()
+            app.detector = Mock()
+
+            yield app
+
+    def test_full_cycle_returns_to_idle(self, app):
+        """Complete unmute -> mute cycle returns to IDLE."""
+        assert app.state == AppState.IDLE
+
+        # Unmute
+        app.handle_unmute()
+        assert app.state == AppState.RECORDING
+
+        # Mute
+        app.recorder.get_duration.return_value = 2.0
+        app.recorder.stop_recording.return_value = b"audio"
+        app.transcriber.transcribe.return_value = "text"
+        app.handle_mute()
+        assert app.state == AppState.IDLE
+
+    def test_multiple_cycles(self, app):
+        """Multiple recording cycles work correctly."""
+        for i in range(3):
+            assert app.state == AppState.IDLE
+
+            app.handle_unmute()
+            assert app.state == AppState.RECORDING
+
+            app.recorder.get_duration.return_value = 1.0 + i
+            app.recorder.stop_recording.return_value = f"audio-{i}".encode()
+            app.transcriber.transcribe.return_value = f"text-{i}"
+            app.handle_mute()
+
+            assert app.state == AppState.IDLE
+
+        assert app.recorder.start_recording.call_count == 3
+        assert app.transcriber.transcribe.call_count == 3
+
+    def test_error_recovery_returns_to_idle(self, app):
+        """Errors during transcription still return to IDLE."""
+        app.handle_unmute()
+        assert app.state == AppState.RECORDING
+
+        app.recorder.get_duration.return_value = 2.0
+        app.recorder.stop_recording.return_value = b"audio"
+        app.transcriber.transcribe.side_effect = TranscriptionError("API down")
+
+        app.handle_mute()
+        assert app.state == AppState.IDLE
+
+        # Should be able to start another recording
+        app.handle_unmute()
+        assert app.state == AppState.RECORDING
+
+
+class TestConfigProperties:
+    """Property-based tests for configuration validation."""
+
+    @pytest.mark.parametrize("delay", [0.0, 0.001, 0.1, 0.5, 1.0, 10.0])
+    def test_valid_type_delays(self, delay, monkeypatch):
+        """Valid type delays pass validation."""
+        monkeypatch.setenv("GROQ_API_KEY", "test-key")
+        from handfree.config import Config
+
+        config = Config(groq_api_key="test-key", type_delay=delay)
+        config.validate()  # Should not raise
+
+    @pytest.mark.parametrize("delay", [-0.001, -0.1, -1.0, -100.0])
+    def test_negative_type_delays_rejected(self, delay, monkeypatch):
+        """Negative type delays are rejected."""
+        monkeypatch.setenv("GROQ_API_KEY", "test-key")
+        from handfree.config import Config
+
+        config = Config(groq_api_key="test-key", type_delay=delay)
+        with pytest.raises(ValueError):
+            config.validate()
+
+    @pytest.mark.parametrize("rate", [8000, 16000, 22050, 44100, 48000])
+    def test_standard_sample_rates(self, rate, monkeypatch):
+        """Standard sample rates pass validation."""
+        monkeypatch.setenv("GROQ_API_KEY", "test-key")
+        from handfree.config import Config
+
+        config = Config(groq_api_key="test-key", sample_rate=rate)
+        config.validate()  # Should not raise
+
+    @pytest.mark.parametrize("rate", [0, -1, -16000])
+    def test_invalid_sample_rates_rejected(self, rate, monkeypatch):
+        """Invalid sample rates are rejected."""
+        monkeypatch.setenv("GROQ_API_KEY", "test-key")
+        from handfree.config import Config
+
+        config = Config(groq_api_key="test-key", sample_rate=rate)
+        with pytest.raises(ValueError):
+            config.validate()
+
+    @pytest.mark.parametrize("use_paste_env,expected", [
+        ("true", True),
+        ("True", True),
+        ("TRUE", True),
+        ("1", True),
+        ("yes", True),
+        ("Yes", True),
+        ("false", False),
+        ("False", False),
+        ("0", False),
+        ("no", False),
+        ("", False),
+    ])
+    def test_use_paste_parsing(self, use_paste_env, expected, monkeypatch):
+        """use_paste environment variable is parsed correctly."""
+        monkeypatch.setenv("GROQ_API_KEY", "test-key")
+        monkeypatch.setenv("HANDFREE_USE_PASTE", use_paste_env)
+        from handfree.config import Config
+
+        config = Config.from_env()
+        assert config.use_paste == expected
+
+
+class TestRunLoopBehavior:
+    """Tests for the run loop behavior."""
+
+    @pytest.fixture(autouse=True)
+    def setup_env(self, monkeypatch):
+        """Set up required environment variables."""
+        monkeypatch.setenv("GROQ_API_KEY", "test-api-key")
+
+    @pytest.fixture
+    def app(self):
+        """Create a HandFreeApp with mocked dependencies."""
+        with patch('main.MuteDetector') as mock_detector, \
+             patch('main.AudioRecorder') as mock_recorder, \
+             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.OutputHandler') as mock_output:
+
+            app = HandFreeApp(api_key="test-key")
+            app.recorder = Mock()
+            app.transcriber = Mock()
+            app.output = Mock()
+            app.detector = Mock()
+
+            yield app
+
+    def test_stop_from_idle_state(self, app):
+        """Stop works correctly from IDLE state."""
+        app._running = True
+        app._state = AppState.IDLE
+        app.stop()
+
+        assert app.is_running is False
+        app.detector.stop.assert_called_once()
+        app.recorder.stop_recording.assert_not_called()
+
+    def test_stop_from_recording_state(self, app):
+        """Stop works correctly from RECORDING state."""
+        app._running = True
+        app._state = AppState.RECORDING
+        app.stop()
+
+        assert app.is_running is False
+        app.detector.stop.assert_called_once()
+        app.recorder.stop_recording.assert_called_once()
+
+    def test_stop_from_transcribing_state(self, app):
+        """Stop works correctly from TRANSCRIBING state."""
+        app._running = True
+        app._state = AppState.TRANSCRIBING
+        app.stop()
+
+        assert app.is_running is False
+        app.detector.stop.assert_called_once()
+        # Recording already stopped when entering TRANSCRIBING
+        app.recorder.stop_recording.assert_not_called()

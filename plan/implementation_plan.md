@@ -9,67 +9,67 @@ This document provides a detailed step-by-step guide to implement the HandFree a
 Use this checklist to track progress and resume from any point.
 
 ### Step 1: Project Initialization
-- [ ] 1.1 Create directory structure (`spec/`, `plan/`, root files)
-- [ ] 1.2 Create virtual environment (`python3 -m venv venv`)
-- [ ] 1.3 Create `requirements.txt`
-- [ ] 1.4 Install dependencies (`pip install -r requirements.txt`)
-- [ ] 1.5 Create `.env` file with `GROQ_API_KEY`
-- [ ] 1.6 Create `.env.example` template
-- [ ] 1.7 Verify: `python -c "import sounddevice; print('OK')"`
-- [ ] 1.8 Verify: `python -c "from AVFAudio import AVAudioApplication; print('OK')"`
+- [x] 1.1 Create directory structure (`spec/`, `plan/`, root files)
+- [x] 1.2 Create virtual environment (`python3 -m venv venv`)
+- [x] 1.3 Create `requirements.txt`
+- [x] 1.4 Install dependencies (`pip install -r requirements.txt`)
+- [x] 1.5 Create `.env` file with `GROQ_API_KEY`
+- [x] 1.6 Create `.env.example` template
+- [x] 1.7 Verify: `python -c "import sounddevice; print('OK')"`
+- [x] 1.8 Verify: `python -c "from AVFAudio import AVAudioApplication; print('OK')"`
 
 ### Step 2: Mute Detector
-- [ ] 2.1 Create `mute_detector.py` with `MuteDetector` class
-- [ ] 2.2 Implement `__init__` with callbacks
-- [ ] 2.3 Implement `start()` - audio session setup
-- [ ] 2.4 Implement `_handle_notification()` - mute state handler
-- [ ] 2.5 Implement `stop()` - cleanup
-- [ ] 2.6 Create `test_mute_detector.py`
-- [ ] 2.7 Verify: Connect AirPods, press stem, see MUTED/UNMUTED output
+- [x] 2.1 Create `mute_detector.py` with `MuteDetector` class
+- [x] 2.2 Implement `__init__` with callbacks
+- [x] 2.3 Implement `start()` - audio session setup
+- [x] 2.4 Implement `_handle_notification()` - mute state handler
+- [x] 2.5 Implement `stop()` - cleanup
+- [x] 2.6 Create `test_mute_detector.py`
+- [x] 2.7 Verify: Connect AirPods, press stem, see MUTED/UNMUTED output
 
 ### Step 3: Audio Recorder
-- [ ] 3.1 Create `audio_recorder.py` with `AudioRecorder` class
-- [ ] 3.2 Implement `__init__` with sample rate config
-- [ ] 3.3 Implement `_audio_callback()` - buffer chunks
-- [ ] 3.4 Implement `start_recording()` - start stream
-- [ ] 3.5 Implement `stop_recording()` - return WAV bytes
-- [ ] 3.6 Implement `get_duration()` and `clear_buffer()`
-- [ ] 3.7 Create `test_audio_recorder.py`
-- [ ] 3.8 Verify: Record 3s audio, save to file, playback sounds clear
+- [x] 3.1 Create `audio_recorder.py` with `AudioRecorder` class
+- [x] 3.2 Implement `__init__` with sample rate config
+- [x] 3.3 Implement `_audio_callback()` - buffer chunks
+- [x] 3.4 Implement `start_recording()` - start stream
+- [x] 3.5 Implement `stop_recording()` - return WAV bytes
+- [x] 3.6 Implement `get_duration()` and `clear_buffer()`
+- [x] 3.7 Create `test_audio_recorder.py`
+- [x] 3.8 Verify: Record 3s audio, save to file, playback sounds clear
 
 ### Step 4: Transcriber
-- [ ] 4.1 Create `transcriber.py` with `Transcriber` class
-- [ ] 4.2 Implement `__init__` - Groq client setup
-- [ ] 4.3 Implement `transcribe()` with retry logic
-- [ ] 4.4 Create `TranscriptionError` exception
-- [ ] 4.5 Create `test_transcriber.py`
-- [ ] 4.6 Verify: Transcribe test audio, text matches spoken content
-- [ ] 4.7 Verify: Latency < 500ms
+- [x] 4.1 Create `transcriber.py` with `Transcriber` class
+- [x] 4.2 Implement `__init__` - Groq client setup
+- [x] 4.3 Implement `transcribe()` with retry logic
+- [x] 4.4 Create `TranscriptionError` exception
+- [x] 4.5 Create `test_transcriber.py`
+- [x] 4.6 Verify: Transcribe test audio, text matches spoken content
+- [x] 4.7 Verify: Latency < 500ms
 
 ### Step 5: Output Handler
-- [ ] 5.1 Create `output_handler.py` with `OutputHandler` class
-- [ ] 5.2 Implement `copy_to_clipboard()` using pyperclip
-- [ ] 5.3 Implement `type_text()` using AppleScript
-- [ ] 5.4 Implement `output()` - does both clipboard + type
-- [ ] 5.5 Create `test_output_handler.py`
-- [ ] 5.6 Verify: Text appears in TextEdit AND clipboard
+- [x] 5.1 Create `output_handler.py` with `OutputHandler` class
+- [x] 5.2 Implement `copy_to_clipboard()` using pyperclip
+- [x] 5.3 Implement `type_text()` using AppleScript
+- [x] 5.4 Implement `output()` - does both clipboard + type
+- [x] 5.5 Create `test_output_handler.py`
+- [x] 5.6 Verify: Text appears in TextEdit AND clipboard
 
 ### Step 6: Main Loop
-- [ ] 6.1 Create `main.py` with `HandFreeApp` class
-- [ ] 6.2 Implement `__init__` - initialize all modules
-- [ ] 6.3 Implement `handle_unmute()` - start recording
-- [ ] 6.4 Implement `handle_mute()` - stop, transcribe, output
-- [ ] 6.5 Implement `run()` - macOS event loop
-- [ ] 6.6 Implement `stop()` - graceful shutdown
-- [ ] 6.7 Add signal handlers (Ctrl+C)
-- [ ] 6.8 Verify: Full flow works end-to-end
+- [x] 6.1 Create `main.py` with `HandFreeApp` class
+- [x] 6.2 Implement `__init__` - initialize all modules
+- [x] 6.3 Implement `handle_unmute()` - start recording
+- [x] 6.4 Implement `handle_mute()` - stop, transcribe, output
+- [x] 6.5 Implement `run()` - macOS event loop
+- [x] 6.6 Implement `stop()` - graceful shutdown
+- [x] 6.7 Add signal handlers (Ctrl+C)
+- [x] 6.8 Verify: Full flow works end-to-end (178 unit tests pass)
 
 ### Step 7: Configuration & Polish
-- [ ] 7.1 Create `config.py` with `Config` class
-- [ ] 7.2 Create `exceptions.py` with custom exceptions
-- [ ] 7.3 Add error handling to all modules
-- [ ] 7.4 Add user-friendly console output
-- [ ] 7.5 Verify: Missing API key shows helpful error
+- [x] 7.1 Create `config.py` with `Config` class
+- [x] 7.2 Create `exceptions.py` with custom exceptions
+- [x] 7.3 Add error handling to all modules
+- [x] 7.4 Add user-friendly console output
+- [x] 7.5 Verify: Missing API key shows helpful error
 
 ### Step 8: End-to-End Testing
 - [ ] 8.1 Test basic flow: unmute → speak → mute → text appears
