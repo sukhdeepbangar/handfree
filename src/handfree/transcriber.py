@@ -9,10 +9,7 @@ from typing import Optional
 
 from groq import Groq
 
-
-class TranscriptionError(Exception):
-    """Raised when transcription fails."""
-    pass
+from handfree.exceptions import TranscriptionError
 
 
 class Transcriber:

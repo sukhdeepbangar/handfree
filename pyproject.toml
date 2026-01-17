@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "handfree"
+version = "0.1.0"
+description = "AirPods-triggered speech-to-text for macOS"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Sukhdeep Singh", email = "sukhdeep.bangar@outlook.com"}
+]
+keywords = ["speech-to-text", "whisper", "airpods", "macos", "transcription"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: MacOS X",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+
+dependencies = [
+    "pyobjc-core>=9.0",
+    "pyobjc-framework-Cocoa>=9.0",
+    "pyobjc-framework-AVFoundation>=9.0",
+    "sounddevice>=0.4.6",
+    "numpy>=1.24.0",
+    "scipy>=1.11.0",
+    "groq>=0.4.0",
+    "pyperclip>=1.8.2",
+    "pyautogui>=0.9.54",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-mock>=3.11.0",
+]
+
+[project.scripts]
+handfree = "main:main"
+
+[project.urls]
+Homepage = "https://github.com/sukhdeepsingh/handfree"
+Repository = "https://github.com/sukhdeepsingh/handfree"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "integration: marks tests as integration tests (may require hardware)",
+]
+addopts = "-v --tb=short"

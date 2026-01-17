@@ -8,10 +8,7 @@ from typing import Optional
 
 import pyperclip
 
-
-class OutputError(Exception):
-    """Raised when output operations fail."""
-    pass
+from handfree.exceptions import OutputError
 
 
 class OutputHandler:
