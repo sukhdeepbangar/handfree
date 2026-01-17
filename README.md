@@ -88,6 +88,8 @@ IDLE --[press Fn]--> RECORDING --[release Fn]--> TRANSCRIBING --> IDLE
 | `HANDFREE_TYPE_DELAY` | No | 0 | Delay between keystrokes in seconds |
 | `HANDFREE_SAMPLE_RATE` | No | 16000 | Audio sample rate in Hz |
 | `HANDFREE_USE_PASTE` | No | false | Use clipboard paste instead of keystrokes |
+| `HANDFREE_UI_ENABLED` | No | true | Enable visual recording indicator |
+| `HANDFREE_HISTORY_ENABLED` | No | true | Enable transcription history storage |
 
 Example `.env` file:
 

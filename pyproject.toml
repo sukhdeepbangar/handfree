@@ -5,20 +5,25 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "handfree"
 version = "0.1.0"
-description = "AirPods-triggered speech-to-text for macOS"
+description = "Cross-platform speech-to-text using hotkey triggers and Groq Whisper API"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
     {name = "Sukhdeep Singh", email = "sukhdeep.bangar@outlook.com"}
 ]
-keywords = ["speech-to-text", "whisper", "airpods", "macos", "transcription"]
+keywords = ["speech-to-text", "whisper", "transcription", "voice-typing", "cross-platform"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: MacOS X",
+    "Environment :: Win32 (MS Windows)",
+    "Environment :: X11 Applications",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -27,23 +32,37 @@ classifiers = [
 ]
 
 dependencies = [
-    "pyobjc-core>=9.0",
-    "pyobjc-framework-Cocoa>=9.0",
-    "pyobjc-framework-AVFoundation>=9.0",
+    # Audio recording
     "sounddevice>=0.4.6",
     "numpy>=1.24.0",
     "scipy>=1.11.0",
+    # Transcription API
     "groq>=0.4.0",
+    # Clipboard operations (cross-platform)
     "pyperclip>=1.8.2",
-    "pyautogui>=0.9.54",
+    # Hotkey detection and typing (Windows/Linux)
+    "pynput>=1.7.6",
+    # Environment management
     "python-dotenv>=1.0.0",
 ]
 
 [project.optional-dependencies]
+# macOS-specific dependencies for Fn key detection and AirPods mute detection
+macos = [
+    "pyobjc-core>=9.0",
+    "pyobjc-framework-Cocoa>=9.0",
+    "pyobjc-framework-AVFoundation>=9.0",
+    "pyobjc-framework-Quartz>=9.0",
+]
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
     "pytest-mock>=3.11.0",
+    "hypothesis>=6.92.0",
+]
+# All optional dependencies for development
+all = [
+    "handfree[macos,dev]",
 ]
 
 [project.scripts]

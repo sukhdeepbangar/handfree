@@ -1,27 +1,32 @@
-# macOS framework bindings
-pyobjc-core>=9.0
-pyobjc-framework-Cocoa>=9.0
-pyobjc-framework-AVFoundation>=9.0
-
+# Core dependencies (all platforms)
 # Audio recording
 sounddevice>=0.4.6
 numpy>=1.24.0
 scipy>=1.11.0
 
-# Groq API
+# Transcription API
 groq>=0.4.0
 
-# Output handling
+# Clipboard operations (cross-platform)
 pyperclip>=1.8.2
-pyautogui>=0.9.54
 
-# Hotkey detection (fallback for AirPods)
+# Hotkey detection and typing (Windows/Linux)
 pynput>=1.7.6
 
 # Environment management
 python-dotenv>=1.0.0
 
-# Testing
+# macOS-specific dependencies (optional on other platforms)
+# These provide Fn key detection, AirPods mute detection, and AppleScript support
+# Install with: pip install -r requirements-macos.txt
+# or: pip install handfree[macos]
+pyobjc-core>=9.0
+pyobjc-framework-Cocoa>=9.0
+pyobjc-framework-AVFoundation>=9.0
+pyobjc-framework-Quartz>=9.0
+
+# Testing dependencies
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-mock>=3.11.0
+hypothesis>=6.92.0

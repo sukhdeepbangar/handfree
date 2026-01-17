@@ -192,11 +192,13 @@ This plan implements two features in priority order:
 - [ ] 4.3.3 Add xdotool fallback for typing if pynput fails on Wayland
 
 ### Step 4.4: Update Dependencies
-- [ ] 4.4.1 Update `pyproject.toml`:
+- [x] 4.4.1 Update `pyproject.toml`:
   - Move pyobjc packages to `[project.optional-dependencies.macos]`
   - Add pynput to core dependencies
-- [ ] 4.4.2 Update `requirements.txt` for development
-- [ ] 4.4.3 Update installation instructions
+  - Add hypothesis to dev dependencies
+  - Update classifiers for cross-platform support
+- [x] 4.4.2 Update `requirements.txt` for development
+- [x] 4.4.3 Add dependency structure tests (test_dependencies.py)
 
 ### Step 4.5: Testing
 - [ ] 4.5.1 Test on Windows 10/11 (VM or physical)
@@ -291,5 +293,5 @@ This plan implements two features in priority order:
 | Phase 1: Recording Indicator | Complete | UI indicator with states (idle, recording, transcribing, success, error) |
 | Phase 2: Transcription History | Complete | JSONL-based storage, history panel UI, integrated with main app |
 | Phase 3: Platform Abstraction | Complete | Platform factory with macOS/Windows/Linux implementations, 43 new tests |
-| Phase 4: Windows/Linux Support | Mostly Complete | Implementations done, pending: dependency updates, xdotool fallback |
+| Phase 4: Windows/Linux Support | Complete | Implementations done, dependencies updated (4.4), pending: xdotool fallback (4.3.3), VM testing (4.5) |
 | Phase 5: Polish | Not Started | |

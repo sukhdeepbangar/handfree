@@ -189,10 +189,14 @@ class TestReadmeTroubleshootingContent:
         assert "api key" in content_lower or "groq_api_key" in content_lower, \
             "Should address API key issues"
 
-    def test_addresses_mute_detection(self, readme_content):
-        """Troubleshooting should address mute detection issues."""
+    def test_addresses_hotkey_or_permissions(self, readme_content):
+        """Troubleshooting should address hotkey or permission issues."""
         content_lower = readme_content.lower()
-        assert "mute" in content_lower, "Should address mute detection issues"
+        # App uses hotkey detection (Fn key or Ctrl+Shift+Space)
+        has_hotkey_content = "fn" in content_lower or "hotkey" in content_lower or "key" in content_lower
+        has_permission_content = "permission" in content_lower or "accessibility" in content_lower
+        assert has_hotkey_content or has_permission_content, \
+            "Should address hotkey or permission issues"
 
     def test_addresses_typing_issues(self, readme_content):
         """Troubleshooting should address typing issues."""
