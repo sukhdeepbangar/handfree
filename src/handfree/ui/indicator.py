@@ -8,6 +8,10 @@ import tkinter as tk
 from typing import Optional
 
 
+# Valid position values
+VALID_POSITIONS = ["top-center", "top-right", "top-left", "bottom-center", "bottom-right", "bottom-left"]
+
+
 class RecordingIndicator:
     """
     A minimal, always-on-top indicator window showing recording state.
@@ -29,7 +33,16 @@ class RecordingIndicator:
         "error": ("#FF3B30", "#FFFFFF", "ERR", 0.95),
     }
 
-    def __init__(self, width: int = 60, height: int = 24, root: Optional[tk.Tk] = None):
+    # Margin from screen edges in pixels
+    EDGE_MARGIN = 10
+
+    def __init__(
+        self,
+        width: int = 60,
+        height: int = 24,
+        root: Optional[tk.Tk] = None,
+        position: str = "top-center"
+    ):
         """
         Initialize recording indicator.
 
@@ -37,11 +50,14 @@ class RecordingIndicator:
             width: Width of indicator in pixels
             height: Height of indicator in pixels
             root: Optional tkinter root window (for testing)
+            position: Position on screen. One of: top-center, top-right, top-left,
+                     bottom-center, bottom-right, bottom-left. Default: top-center.
         """
         self.width = width
         self.height = height
         self._current_state = "idle"
         self._flash_after_id = None
+        self._position = position if position in VALID_POSITIONS else "top-center"
 
         # Create window if root not provided (for testing purposes)
         if root is None:
@@ -83,15 +99,44 @@ class RecordingIndicator:
         self._position_window()
 
     def _position_window(self) -> None:
-        """Position window at top-center of screen."""
+        """Position window based on configured position."""
         # Get screen dimensions
         screen_width = self.window.winfo_screenwidth()
+        screen_height = self.window.winfo_screenheight()
 
-        # Calculate position (top-center, with small margin from top)
-        x = (screen_width - self.width) // 2
-        y = 10  # 10 pixels from top
+        # Calculate x position based on horizontal alignment
+        if "center" in self._position:
+            x = (screen_width - self.width) // 2
+        elif "right" in self._position:
+            x = screen_width - self.width - self.EDGE_MARGIN
+        else:  # left
+            x = self.EDGE_MARGIN
+
+        # Calculate y position based on vertical alignment
+        if self._position.startswith("top"):
+            y = self.EDGE_MARGIN
+        else:  # bottom
+            y = screen_height - self.height - self.EDGE_MARGIN
 
         self.window.geometry(f"{self.width}x{self.height}+{x}+{y}")
+
+    @property
+    def position(self) -> str:
+        """Current position setting."""
+        return self._position
+
+    def set_position(self, position: str) -> None:
+        """
+        Change the indicator position.
+
+        Args:
+            position: One of: top-center, top-right, top-left, bottom-center,
+                     bottom-right, bottom-left
+        """
+        if position not in VALID_POSITIONS:
+            raise ValueError(f"Invalid position: {position}. Must be one of {VALID_POSITIONS}")
+        self._position = position
+        self._position_window()
 
     def _draw_state(self) -> None:
         """Draw the current state on the canvas."""

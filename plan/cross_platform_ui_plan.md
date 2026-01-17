@@ -214,11 +214,14 @@ This plan implements two features in priority order:
 **Goal**: Configuration options, refinements, and documentation
 
 ### Step 5.1: Configuration
-- [ ] 5.1.1 Add `HANDFREE_UI_ENABLED` env var (default: true)
-- [ ] 5.1.2 Add `HANDFREE_UI_POSITION` env var (default: top-center)
-- [ ] 5.1.3 Add `HANDFREE_HISTORY_ENABLED` env var (default: true)
-- [ ] 5.1.4 Add `HANDFREE_HOTKEY` env var for custom hotkey (optional)
-- [ ] 5.1.5 Update `config.py` to load new settings
+- [x] 5.1.1 Add `HANDFREE_UI_ENABLED` env var (default: true)
+- [x] 5.1.2 Add `HANDFREE_UI_POSITION` env var (default: top-center)
+- [x] 5.1.3 Add `HANDFREE_HISTORY_ENABLED` env var (default: true)
+- [x] 5.1.4 Add `HANDFREE_HOTKEY` env var for custom hotkey (optional)
+- [x] 5.1.5 Update `config.py` to load new settings
+- [x] 5.1.6 Add `HANDFREE_HISTORY_MAX` env var (default: 1000)
+- [x] 5.1.7 Update `main.py` to use `Config.from_env()` consistently
+- [x] 5.1.8 Add 75+ unit tests for new configuration (test_config.py)
 
 ### Step 5.2: UI Refinements
 - [ ] 5.2.1 Add success/error flash animation (brief green/red, then fade)
@@ -294,4 +297,4 @@ This plan implements two features in priority order:
 | Phase 2: Transcription History | Complete | JSONL-based storage, history panel UI, integrated with main app |
 | Phase 3: Platform Abstraction | Complete | Platform factory with macOS/Windows/Linux implementations, 43 new tests |
 | Phase 4: Windows/Linux Support | Complete | Implementations done, dependencies updated (4.4), pending: xdotool fallback (4.3.3), VM testing (4.5) |
-| Phase 5: Polish | Not Started | |
+| Phase 5: Polish | In Progress | Step 5.1 (Configuration) complete with 75+ tests; remaining: UI refinements, error handling, documentation |

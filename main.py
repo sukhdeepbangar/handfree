@@ -14,6 +14,7 @@ from typing import Optional
 from dotenv import load_dotenv
 
 from handfree.audio_recorder import AudioRecorder
+from handfree.config import Config
 from handfree.transcriber import Transcriber
 from handfree.exceptions import TranscriptionError, OutputError
 from handfree.ui import HandFreeUI
@@ -43,6 +44,7 @@ class HandFreeApp:
         sample_rate: int = 16000,
         use_paste: bool = False,
         ui_enabled: bool = True,
+        ui_position: str = "top-center",
         history_enabled: bool = True
     ):
         """
@@ -55,6 +57,7 @@ class HandFreeApp:
             sample_rate: Audio sample rate in Hz.
             use_paste: If True, use clipboard paste instead of keystroke typing.
             ui_enabled: If True, show visual UI indicator.
+            ui_position: Position for UI indicator (top-center, top-right, etc.).
             history_enabled: If True, save transcriptions to history database.
         """
         # Load environment variables
@@ -71,8 +74,11 @@ class HandFreeApp:
         self.transcriber = Transcriber(api_key=api_key)
         self.output = create_output_handler(type_delay=type_delay)
 
-        # Initialize UI (with history support)
-        self.ui = HandFreeUI(history_enabled=history_enabled) if ui_enabled else None
+        # Initialize UI (with history support and position)
+        self.ui = HandFreeUI(
+            history_enabled=history_enabled,
+            indicator_position=ui_position
+        ) if ui_enabled else None
 
         # Initialize hotkey detector (platform-specific)
         self.detector = create_hotkey_detector(
@@ -244,36 +250,27 @@ class HandFreeApp:
 
 def main():
     """Main entry point."""
-    # Load environment variables early to validate
-    load_dotenv()
-
-    # Check for API key
-    if not os.environ.get("GROQ_API_KEY"):
-        print("Error: GROQ_API_KEY environment variable is not set.")
-        print()
-        print("To fix this:")
-        print("  1. Get your API key from https://console.groq.com/keys")
-        print("  2. Set it in your .env file: GROQ_API_KEY=your_key_here")
-        print("  3. Or export it: export GROQ_API_KEY=your_key_here")
+    # Load and validate configuration
+    try:
+        config = Config.from_env()
+        warnings = config.validate()
+        for warning in warnings:
+            print(f"Warning: {warning}")
+    except ValueError as e:
+        print(f"Error: {e}")
         sys.exit(1)
 
-    # Load optional configuration from environment
-    language = os.environ.get("HANDFREE_LANGUAGE")
-    type_delay = float(os.environ.get("HANDFREE_TYPE_DELAY", "0"))
-    sample_rate = int(os.environ.get("HANDFREE_SAMPLE_RATE", "16000"))
-    use_paste = os.environ.get("HANDFREE_USE_PASTE", "").lower() in ("true", "1", "yes")
-    ui_enabled = os.environ.get("HANDFREE_UI_ENABLED", "true").lower() in ("true", "1", "yes")
-    history_enabled = os.environ.get("HANDFREE_HISTORY_ENABLED", "true").lower() in ("true", "1", "yes")
-
-    # Create application
+    # Create application with validated config
     try:
         app = HandFreeApp(
-            language=language,
-            type_delay=type_delay,
-            sample_rate=sample_rate,
-            use_paste=use_paste,
-            ui_enabled=ui_enabled,
-            history_enabled=history_enabled
+            api_key=config.groq_api_key,
+            language=config.language,
+            type_delay=config.type_delay,
+            sample_rate=config.sample_rate,
+            use_paste=config.use_paste,
+            ui_enabled=config.ui_enabled,
+            ui_position=config.ui_position,
+            history_enabled=config.history_enabled
         )
     except Exception as e:
         print(f"Error: Failed to initialize application: {e}")

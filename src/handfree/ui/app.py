@@ -21,13 +21,21 @@ class HandFreeUI:
     Provides thread-safe methods to update UI state from the main application thread.
     """
 
-    def __init__(self, history_enabled: bool = True, history_path: Optional[Path] = None):
+    def __init__(
+        self,
+        history_enabled: bool = True,
+        history_path: Optional[Path] = None,
+        indicator_position: str = "top-center"
+    ):
         """
         Initialize UI controller.
 
         Args:
             history_enabled: Whether to enable history storage and panel
             history_path: Optional path for history file (for testing)
+            indicator_position: Position for the recording indicator. One of:
+                               top-center, top-right, top-left, bottom-center,
+                               bottom-right, bottom-left. Default: top-center.
         """
         self._root: Optional[tk.Tk] = None
         self._indicator: Optional[RecordingIndicator] = None
@@ -37,6 +45,7 @@ class HandFreeUI:
         self._running = False
         self._history_enabled = history_enabled
         self._history_path = history_path
+        self._indicator_position = indicator_position
 
     def start(self) -> None:
         """
@@ -67,8 +76,8 @@ class HandFreeUI:
         self._root = tk.Tk()
         self._root.withdraw()  # Hide root window
 
-        # Create indicator
-        self._indicator = RecordingIndicator(root=self._root)
+        # Create indicator with configured position
+        self._indicator = RecordingIndicator(root=self._root, position=self._indicator_position)
 
         # Create history components if enabled
         if self._history_enabled:
