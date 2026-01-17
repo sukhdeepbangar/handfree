@@ -159,9 +159,9 @@ class TestMuteDetector(unittest.TestCase):
     @patch('handfree.mute_detector.NSNotificationCenter')
     def test_start_audio_session_error(self, mock_notification_center, mock_audio_session, mock_audio_app):
         """Test handling audio session configuration error."""
-        # Set up mocks with error
+        # Set up mocks with error - returns False to indicate failure
         mock_session_instance = MagicMock()
-        mock_session_instance.setCategory_mode_options_error_.return_value = (False, "Test Error")
+        mock_session_instance.setCategory_mode_options_error_.return_value = False
         mock_audio_session.sharedInstance.return_value = mock_session_instance
 
         # Verify RuntimeError is raised

@@ -16,6 +16,7 @@ from handfree.exceptions import (
     OutputError,
 )
 from handfree.mute_detector import MuteDetector
+from handfree.hotkey_detector import HotkeyDetector
 from handfree.output_handler import OutputHandler, get_clipboard_content
 from handfree.transcriber import Transcriber
 
@@ -31,6 +32,7 @@ __all__ = [
     "TranscriptionError",
     "OutputError",
     "MuteDetector",
+    "HotkeyDetector",
     "OutputHandler",
     "get_clipboard_content",
     "Transcriber",

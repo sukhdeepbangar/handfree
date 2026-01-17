@@ -1,20 +1,20 @@
 # HandFree
 
-AirPods-triggered speech-to-text for macOS. Press your AirPods stem to start recording, press again to transcribe and type.
+Fast speech-to-text for macOS. Hold the **Fn/Globe key** to record, release to transcribe and type. Similar to Whisper Flow.
 
 ## Features
 
-- **Hands-free operation**: Use AirPods mute gesture to control recording
+- **Simple hotkey**: Hold Fn key to record, release to transcribe (like Whisper Flow)
 - **Fast transcription**: Uses Groq Whisper API for near-instant results (~200ms)
 - **Auto-typing**: Transcribed text is typed at your cursor position
 - **Clipboard backup**: Text is also copied to clipboard as fallback
 - **Language support**: Auto-detects language or specify manually
+- **AirPods mode**: Optional mute gesture control (requires active call)
 
 ## Requirements
 
-- **macOS 14 (Sonoma) or later** - Uses AVAudioApplication API
+- **macOS 14 (Sonoma) or later**
 - **Python 3.10 or later**
-- **AirPods Pro or AirPods** with mute gesture support (3rd gen or later)
 - **Groq API key** - Free tier available at [console.groq.com](https://console.groq.com)
 
 ## Installation
@@ -63,24 +63,27 @@ Get your free API key at [console.groq.com/keys](https://console.groq.com/keys)
 
 ## Usage
 
-### Basic Usage
+### Basic Usage (Fn Key Mode - Default)
 
-1. Connect your AirPods to your Mac
-2. Run the application:
+1. Run the application:
 
 ```bash
 python main.py
 ```
 
-3. Click where you want text to appear (any text field or editor)
-4. **Unmute AirPods** (press stem) - Recording starts
-5. Speak your text
-6. **Mute AirPods** (press stem again) - Recording stops, text is transcribed and typed
+2. Click where you want text to appear (any text field or editor)
+3. **Hold Fn/Globe key** - Recording starts
+4. Speak while holding
+5. **Release Fn key** - Recording stops, text is transcribed and typed
+
+### AirPods Mode (Optional)
+
+Set `HANDFREE_USE_HOTKEY=false` to use AirPods mute gesture instead (only works during active calls like FaceTime).
 
 ### State Flow
 
 ```
-IDLE --[unmute]--> RECORDING --[mute]--> TRANSCRIBING --> IDLE
+IDLE --[press Fn]--> RECORDING --[release Fn]--> TRANSCRIBING --> IDLE
 ```
 
 ### Environment Variables
@@ -92,6 +95,7 @@ IDLE --[unmute]--> RECORDING --[mute]--> TRANSCRIBING --> IDLE
 | `HANDFREE_TYPE_DELAY` | No | 0 | Delay between keystrokes in seconds |
 | `HANDFREE_SAMPLE_RATE` | No | 16000 | Audio sample rate in Hz |
 | `HANDFREE_USE_PASTE` | No | false | Use clipboard paste instead of keystrokes |
+| `HANDFREE_USE_HOTKEY` | No | true | Use Option+Space hotkey (false = AirPods mute gesture) |
 
 Example `.env` file:
 

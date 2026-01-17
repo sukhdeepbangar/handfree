@@ -49,19 +49,19 @@ class MuteDetector:
         self._session = AVAudioSession.sharedInstance()
 
         # Configure session for recording
-        success, error = self._session.setCategory_mode_options_error_(
+        success = self._session.setCategory_mode_options_error_(
             "AVAudioSessionCategoryPlayAndRecord",
             "AVAudioSessionModeDefault",
             0,
             None
         )
         if not success:
-            raise RuntimeError(f"Failed to set audio session category: {error}")
+            raise RuntimeError("Failed to set audio session category")
 
         # Activate session
-        success, error = self._session.setActive_error_(True, None)
+        success = self._session.setActive_error_(True, None)
         if not success:
-            raise RuntimeError(f"Failed to activate audio session: {error}")
+            raise RuntimeError("Failed to activate audio session")
 
         # Get initial mute state
         app = AVAudioApplication.sharedInstance()

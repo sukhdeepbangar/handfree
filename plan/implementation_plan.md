@@ -87,6 +87,15 @@ Use this checklist to track progress and resume from any point.
 - [x] 9.4 Document troubleshooting
 - [x] 9.5 Verify: 44 documentation tests pass
 
+### Step 10: Fn/Globe Key Hotkey (Fallback)
+- [x] 10.1 Create `hotkey_detector.py` using CGEvent tap
+- [x] 10.2 Detect Fn key (keycode 63) press and release
+- [x] 10.3 Implement hold-to-record, release-to-transcribe flow
+- [x] 10.4 Update `main.py` to use hotkey mode by default
+- [x] 10.5 Add `HANDFREE_USE_HOTKEY` environment variable
+- [x] 10.6 Update README with Fn key usage instructions
+- [x] 10.7 Verify: Hold Fn, speak, release -> text typed correctly
+
 ---
 
 ## Detailed Implementation

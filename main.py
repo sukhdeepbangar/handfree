@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from Foundation import NSRunLoop, NSDate, NSDefaultRunLoopMode
 
 from handfree.mute_detector import MuteDetector
+from handfree.hotkey_detector import HotkeyDetector
 from handfree.audio_recorder import AudioRecorder
 from handfree.transcriber import Transcriber
 from handfree.output_handler import OutputHandler
@@ -37,7 +38,8 @@ class HandFreeApp:
         language: Optional[str] = None,
         type_delay: float = 0.0,
         sample_rate: int = 16000,
-        use_paste: bool = False
+        use_paste: bool = False,
+        use_hotkey: bool = True
     ):
         """
         Initialize all components.
@@ -48,6 +50,7 @@ class HandFreeApp:
             type_delay: Delay between keystrokes in seconds.
             sample_rate: Audio sample rate in Hz.
             use_paste: If True, use clipboard paste instead of keystroke typing.
+            use_hotkey: If True, use Cmd+Shift+R hotkey instead of AirPods mute gesture.
         """
         # Load environment variables
         load_dotenv()
@@ -55,15 +58,24 @@ class HandFreeApp:
         # Store configuration
         self.language = language or os.environ.get("HANDFREE_LANGUAGE")
         self.use_paste = use_paste
+        self.use_hotkey = use_hotkey
 
         # Initialize modules
         self.recorder = AudioRecorder(sample_rate=sample_rate)
         self.transcriber = Transcriber(api_key=api_key)
         self.output = OutputHandler(type_delay=type_delay)
-        self.detector = MuteDetector(
-            on_mute=self.handle_mute,
-            on_unmute=self.handle_unmute
-        )
+
+        # Choose detector based on mode
+        if use_hotkey:
+            self.detector = HotkeyDetector(
+                on_start=self.handle_unmute,
+                on_stop=self.handle_mute
+            )
+        else:
+            self.detector = MuteDetector(
+                on_mute=self.handle_mute,
+                on_unmute=self.handle_unmute
+            )
 
         # Application state
         self._state = AppState.IDLE
@@ -133,28 +145,45 @@ class HandFreeApp:
 
     def run(self) -> None:
         """Start the application and run the event loop."""
+        import time
+
         self._running = True
         self.detector.start()
 
         self._print_banner()
 
-        # Run macOS event loop
+        # Run event loop
         while self._running:
-            NSRunLoop.currentRunLoop().runMode_beforeDate_(
-                NSDefaultRunLoopMode,
-                NSDate.dateWithTimeIntervalSinceNow_(0.1)
-            )
+            if self.use_hotkey:
+                # Hotkey mode uses pynput threads, just sleep
+                time.sleep(0.1)
+            else:
+                # AirPods mode needs macOS run loop for notifications
+                NSRunLoop.currentRunLoop().runMode_beforeDate_(
+                    NSDefaultRunLoopMode,
+                    NSDate.dateWithTimeIntervalSinceNow_(0.1)
+                )
 
     def _print_banner(self) -> None:
         """Print welcome message and instructions."""
         print("=" * 55)
-        print("  HandFree - AirPods-Triggered Speech-to-Text")
+        print("  HandFree - Speech-to-Text")
         print("=" * 55)
         print()
-        print("  Usage:")
-        print("    1. UNMUTE AirPods (press stem) -> Start recording")
-        print("    2. Speak your text")
-        print("    3. MUTE AirPods (press stem)   -> Transcribe & type")
+        if self.use_hotkey:
+            print("  Mode: HOTKEY (Fn/Globe key)")
+            print()
+            print("  Usage:")
+            print("    1. HOLD Fn key            -> Recording starts")
+            print("    2. Speak while holding")
+            print("    3. RELEASE Fn key         -> Transcribes & types")
+        else:
+            print("  Mode: AIRPODS (mute gesture - requires active call)")
+            print()
+            print("  Usage:")
+            print("    1. UNMUTE AirPods (press stem) -> Start recording")
+            print("    2. Speak your text")
+            print("    3. MUTE AirPods (press stem)   -> Transcribe & type")
         print()
         print("  The transcribed text will be:")
         print("    - Typed at the current cursor position")
@@ -201,6 +230,8 @@ def main():
     type_delay = float(os.environ.get("HANDFREE_TYPE_DELAY", "0"))
     sample_rate = int(os.environ.get("HANDFREE_SAMPLE_RATE", "16000"))
     use_paste = os.environ.get("HANDFREE_USE_PASTE", "").lower() in ("true", "1", "yes")
+    # Use hotkey by default (AirPods mute only works during calls)
+    use_hotkey = os.environ.get("HANDFREE_USE_HOTKEY", "true").lower() not in ("false", "0", "no")
 
     # Create application
     try:
@@ -208,7 +239,8 @@ def main():
             language=language,
             type_delay=type_delay,
             sample_rate=sample_rate,
-            use_paste=use_paste
+            use_paste=use_paste,
+            use_hotkey=use_hotkey
         )
     except Exception as e:
         print(f"Error: Failed to initialize application: {e}")

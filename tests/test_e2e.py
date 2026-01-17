@@ -612,7 +612,7 @@ class TestE2ENoAirPods:
             mock_detector.side_effect = MuteDetectionError("No AirPods connected")
 
             with pytest.raises(MuteDetectionError) as exc_info:
-                HandFreeApp(api_key="test-key")
+                HandFreeApp(api_key="test-key", use_hotkey=False)
 
             assert "No AirPods connected" in str(exc_info.value)
 
@@ -627,7 +627,7 @@ class TestE2ENoAirPods:
             mock_detector_class.return_value = mock_detector
             mock_detector.start.side_effect = MuteDetectionError("Failed to start mute detection")
 
-            app = HandFreeApp(api_key="test-key")
+            app = HandFreeApp(api_key="test-key", use_hotkey=False)
 
             with pytest.raises(MuteDetectionError):
                 app.run()
@@ -642,7 +642,7 @@ class TestE2ENoAirPods:
             mock_recorder_class.side_effect = AudioRecordingError("No audio device")
 
             with pytest.raises(AudioRecordingError):
-                HandFreeApp(api_key="test-key")
+                HandFreeApp(api_key="test-key", use_hotkey=False)
 
     def test_transcription_api_failure(self, monkeypatch):
         """Graceful handling when transcription API fails."""
