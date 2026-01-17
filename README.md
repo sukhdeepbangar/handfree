@@ -1,10 +1,10 @@
 # HandFree
 
-Fast speech-to-text for macOS. Hold the **Fn/Globe key** to record, release to transcribe and type. Similar to Whisper Flow.
+Fast speech-to-text for macOS. Hold the **Fn/Globe key** to record, release to transcribe and type.
 
 ## Features
 
-- **Simple hotkey**: Hold Fn key to record, release to transcribe (like Whisper Flow)
+- **Simple hotkey**: Hold Fn key to record, release to transcribe
 - **Fast transcription**: Uses Groq Whisper API for near-instant results (~200ms)
 - **Auto-typing**: Transcribed text is typed at your cursor position
 - **Clipboard backup**: Text is also copied to clipboard as fallback
