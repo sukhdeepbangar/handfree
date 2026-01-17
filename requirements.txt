@@ -1,0 +1,24 @@
+# macOS framework bindings
+pyobjc-core>=9.0
+pyobjc-framework-Cocoa>=9.0
+pyobjc-framework-AVFoundation>=9.0
+
+# Audio recording
+sounddevice>=0.4.6
+numpy>=1.24.0
+scipy>=1.11.0
+
+# Groq API
+groq>=0.4.0
+
+# Output handling
+pyperclip>=1.8.2
+pyautogui>=0.9.54
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0
