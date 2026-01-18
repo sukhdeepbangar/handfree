@@ -103,17 +103,19 @@ class HandFreeUI:
         self._root = tk.Tk()
         self._root.withdraw()  # Hide root window
 
-        # Create indicator - prefer native on macOS (doesn't steal focus)
+        # TEMPORARILY DISABLED: Indicator steals focus on macOS
+        # TODO: Find a way to show indicator without stealing focus
         self._native_indicator = None
-        if NATIVE_INDICATOR_AVAILABLE:
-            try:
-                self._native_indicator = NativeRecordingIndicator(position=self._indicator_position)
-                self._indicator = None  # Don't create tkinter indicator
-            except Exception as e:
-                print(f"[Warning] Native indicator failed, using tkinter: {e}")
-                self._indicator = RecordingIndicator(root=self._root, position=self._indicator_position)
-        else:
-            self._indicator = RecordingIndicator(root=self._root, position=self._indicator_position)
+        self._indicator = None
+        # if NATIVE_INDICATOR_AVAILABLE:
+        #     try:
+        #         self._native_indicator = NativeRecordingIndicator(position=self._indicator_position)
+        #         self._indicator = None  # Don't create tkinter indicator
+        #     except Exception as e:
+        #         print(f"[Warning] Native indicator failed, using tkinter: {e}")
+        #         self._indicator = RecordingIndicator(root=self._root, position=self._indicator_position)
+        # else:
+        #     self._indicator = RecordingIndicator(root=self._root, position=self._indicator_position)
 
         # Create history components if enabled
         if self._history_enabled:
