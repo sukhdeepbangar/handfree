@@ -243,14 +243,14 @@ class, not in the platform-specific `MacOSHotkeyDetector`.
 
 ---
 
-## Phase 4: Animated Recording Indicator
+## Phase 4: Animated Recording Indicator ✅ COMPLETED
 
 ### Step 4.1: Add animation constants
 
 **File:** `src/handfree/ui/indicator.py`
 
 **Tasks:**
-- [ ] Add constants after FLASH_INTERVAL_MS (around line 54):
+- [x] Add constants after FLASH_INTERVAL_MS (around line 54):
 
 ```python
 # Bar animation configuration
@@ -266,12 +266,12 @@ BAR_COLORS = ["#FF3B30", "#FF6B5B", "#FF9500", "#FF6B5B"]
 BAR_BG_COLOR = "#1C1C1E"
 ```
 
-### Step 4.2: Add instance variables
+### Step 4.2: Add instance variables ✅
 
 **File:** `src/handfree/ui/indicator.py`
 
 **Tasks:**
-- [ ] Add to `__init__()` after `self._transparency_supported = True` (around line 79):
+- [x] Add to `__init__()` after `self._transparency_supported = True` (around line 79):
 
 ```python
 # Bar animation state
@@ -280,15 +280,15 @@ self._bar_heights: List[int] = [self.BAR_MIN_HEIGHT] * self.BAR_COUNT
 self._bar_directions: List[int] = [1, -1, 1, -1]  # Alternating up/down
 ```
 
-- [ ] Add `import random` at top of file
-- [ ] Update `List` import to include it if not present
+- [x] Add `import random` at top of file
+- [x] Update `List` import to include it if not present
 
-### Step 4.3: Add bar drawing method
+### Step 4.3: Add bar drawing method ✅
 
 **File:** `src/handfree/ui/indicator.py`
 
 **Tasks:**
-- [ ] Add method after `_draw_state()`:
+- [x] Add method after `_draw_state()`:
 
 ```python
 def _draw_recording_bars(self) -> None:
@@ -320,12 +320,12 @@ def _draw_recording_bars(self) -> None:
         )
 ```
 
-### Step 4.4: Add animation method
+### Step 4.4: Add animation method ✅
 
 **File:** `src/handfree/ui/indicator.py`
 
 **Tasks:**
-- [ ] Add method after `_draw_recording_bars()`:
+- [x] Add method after `_draw_recording_bars()`:
 
 ```python
 def _animate_bars(self) -> None:
@@ -356,12 +356,12 @@ def _animate_bars(self) -> None:
     )
 ```
 
-### Step 4.5: Add stop animation method
+### Step 4.5: Add stop animation method ✅
 
 **File:** `src/handfree/ui/indicator.py`
 
 **Tasks:**
-- [ ] Add method after `_animate_bars()`:
+- [x] Add method after `_animate_bars()`:
 
 ```python
 def _stop_bar_animation(self) -> None:
@@ -377,12 +377,12 @@ def _stop_bar_animation(self) -> None:
     self._bar_heights = [self.BAR_MIN_HEIGHT] * self.BAR_COUNT
 ```
 
-### Step 4.6: Modify `_draw_state()` for recording
+### Step 4.6: Modify `_draw_state()` for recording ✅
 
 **File:** `src/handfree/ui/indicator.py`
 
 **Tasks:**
-- [ ] Modify `_draw_state()` to handle recording state specially:
+- [x] Modify `_draw_state()` to handle recording state specially:
 
 **At the beginning of `_draw_state()`, add:**
 ```python
@@ -415,12 +415,12 @@ def _draw_state(self, opacity_override: Optional[float] = None) -> None:
     # ... rest of method unchanged
 ```
 
-### Step 4.7: Update cleanup methods
+### Step 4.7: Update cleanup methods ✅
 
 **File:** `src/handfree/ui/indicator.py`
 
 **Tasks:**
-- [ ] Update `_cancel_animations()` to include bar animation:
+- [x] Update `_cancel_animations()` to include bar animation:
   ```python
   def _cancel_animations(self) -> None:
       """Cancel all pending animation callbacks."""
@@ -436,7 +436,7 @@ def _draw_state(self, opacity_override: Optional[float] = None) -> None:
       self._stop_bar_animation()
   ```
 
-- [ ] Update `destroy()` to call `_stop_bar_animation()`:
+- [x] Update `destroy()` to call `_stop_bar_animation()`:
   ```python
   def destroy(self) -> None:
       """Destroy the indicator window."""
@@ -446,6 +446,24 @@ def _draw_state(self, opacity_override: Optional[float] = None) -> None:
       except tk.TclError:
           pass
   ```
+
+### Step 4.8: Tests ✅
+
+**Files Created:**
+- [x] Created `tests/test_animated_recording_indicator.py` - 45 comprehensive tests including property-based tests
+
+**Test Coverage:**
+- Bar animation constants and configuration
+- Instance variable initialization
+- `_draw_recording_bars()` method behavior
+- `_animate_bars()` method with height bounds and direction reversal
+- `_stop_bar_animation()` cleanup
+- Recording state integration (animated bars instead of static text)
+- Cleanup integration
+- Property-based tests for animation behavior and drawing
+- Edge cases (TclError handling, rapid state changes)
+
+**Test Results:** All 997 tests pass (45 new tests + 952 existing)
 
 ---
 

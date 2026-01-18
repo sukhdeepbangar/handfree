@@ -4,6 +4,7 @@ Recording Indicator Component
 Provides a minimal, always-on-top visual indicator showing the application state.
 """
 
+import random
 import sys
 import tkinter as tk
 from typing import Optional, List
@@ -53,6 +54,18 @@ class RecordingIndicator:
     FLASH_STEPS = 6  # Number of animation steps
     FLASH_INTERVAL_MS = 100  # Time between animation steps
 
+    # Bar animation configuration
+    BAR_COUNT = 4
+    BAR_WIDTH = 6
+    BAR_GAP = 3
+    BAR_MIN_HEIGHT = 4
+    BAR_MAX_HEIGHT = 16
+    BAR_ANIMATION_INTERVAL_MS = 80  # ~12.5 FPS
+
+    # Bar colors (red to orange gradient)
+    BAR_COLORS = ["#FF3B30", "#FF6B5B", "#FF9500", "#FF6B5B"]
+    BAR_BG_COLOR = "#1C1C1E"
+
     def __init__(
         self,
         width: int = 60,
@@ -77,6 +90,11 @@ class RecordingIndicator:
         self._position = position if position in VALID_POSITIONS else "top-center"
         self._platform = get_current_platform()
         self._transparency_supported = True
+
+        # Bar animation state
+        self._bar_animation_id: Optional[str] = None
+        self._bar_heights: List[int] = [self.BAR_MIN_HEIGHT] * self.BAR_COUNT
+        self._bar_directions: List[int] = [1, -1, 1, -1]  # Alternating up/down
 
         # Create window if root not provided (for testing purposes)
         if root is None:
@@ -251,6 +269,26 @@ class RecordingIndicator:
         if self._current_state not in self.STATE_CONFIG:
             return
 
+        # Special handling for recording state - use animated bars
+        if self._current_state == "recording":
+            self._draw_recording_bars()
+            # Start animation if not already running
+            if self._bar_animation_id is None:
+                self._bar_animation_id = self.window.after(
+                    self.BAR_ANIMATION_INTERVAL_MS,
+                    self._animate_bars
+                )
+            # Set opacity
+            if self._transparency_supported:
+                try:
+                    self.window.attributes("-alpha", 0.95)
+                except tk.TclError:
+                    pass
+            return
+
+        # Stop bar animation if running (for non-recording states)
+        self._stop_bar_animation()
+
         bg_color, text_color, text, base_opacity = self.STATE_CONFIG[self._current_state]
         opacity = opacity_override if opacity_override is not None else base_opacity
 
@@ -282,14 +320,85 @@ class RecordingIndicator:
             except tk.TclError:
                 pass
 
+    def _draw_recording_bars(self) -> None:
+        """Draw animated audio visualizer bars for recording state."""
+        self.canvas.delete("all")
+
+        # Draw dark background
+        self.canvas.create_rectangle(
+            0, 0, self.width, self.height,
+            fill=self.BAR_BG_COLOR,
+            outline=""
+        )
+
+        # Calculate starting x position to center bars
+        total_bar_width = (self.BAR_COUNT * self.BAR_WIDTH) + ((self.BAR_COUNT - 1) * self.BAR_GAP)
+        start_x = (self.width - total_bar_width) // 2
+        center_y = self.height // 2
+
+        # Draw each bar
+        for i, height in enumerate(self._bar_heights):
+            x = start_x + i * (self.BAR_WIDTH + self.BAR_GAP)
+            y1 = center_y - height // 2
+            y2 = center_y + height // 2
+
+            self.canvas.create_rectangle(
+                x, y1, x + self.BAR_WIDTH, y2,
+                fill=self.BAR_COLORS[i % len(self.BAR_COLORS)],
+                outline=""
+            )
+
+    def _animate_bars(self) -> None:
+        """Animate bar heights for recording visualization."""
+        if self._current_state != "recording":
+            return
+
+        # Update each bar height with randomness
+        for i in range(len(self._bar_heights)):
+            delta = random.randint(2, 5) * self._bar_directions[i]
+            self._bar_heights[i] += delta
+
+            # Bounce at limits
+            if self._bar_heights[i] >= self.BAR_MAX_HEIGHT:
+                self._bar_heights[i] = self.BAR_MAX_HEIGHT
+                self._bar_directions[i] = -1
+            elif self._bar_heights[i] <= self.BAR_MIN_HEIGHT:
+                self._bar_heights[i] = self.BAR_MIN_HEIGHT
+                self._bar_directions[i] = 1
+
+        # Redraw bars
+        self._draw_recording_bars()
+
+        # Schedule next frame
+        self._bar_animation_id = self.window.after(
+            self.BAR_ANIMATION_INTERVAL_MS,
+            self._animate_bars
+        )
+
+    def _stop_bar_animation(self) -> None:
+        """Stop the bar animation and reset state."""
+        if self._bar_animation_id is not None:
+            try:
+                self.window.after_cancel(self._bar_animation_id)
+            except tk.TclError:
+                pass
+            self._bar_animation_id = None
+
+        # Reset bar heights
+        self._bar_heights = [self.BAR_MIN_HEIGHT] * self.BAR_COUNT
+
     def _cancel_animations(self) -> None:
         """Cancel all pending animation callbacks."""
+        # Cancel flash animations
         for after_id in self._flash_after_ids:
             try:
                 self.window.after_cancel(after_id)
             except (tk.TclError, ValueError):
                 pass
         self._flash_after_ids.clear()
+
+        # Cancel bar animation
+        self._stop_bar_animation()
 
     def _schedule_flash_animation(self) -> None:
         """

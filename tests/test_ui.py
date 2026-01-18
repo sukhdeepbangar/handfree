@@ -685,7 +685,11 @@ class TestDrawStateOpacityOverride:
         assert sig.parameters['opacity_override'].default is None
 
     def test_draw_state_uses_opacity_override_when_provided(self):
-        """Test that _draw_state uses opacity_override value."""
+        """Test that _draw_state uses opacity_override value.
+
+        Note: Uses 'transcribing' state since 'recording' state uses animated
+        bars with fixed opacity.
+        """
         from handfree.ui.indicator import RecordingIndicator
 
         mock_window = MagicMock()
@@ -694,7 +698,7 @@ class TestDrawStateOpacityOverride:
         with patch('handfree.ui.indicator.tk.Toplevel', return_value=mock_window), \
              patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas):
             indicator = RecordingIndicator()
-            indicator._current_state = "recording"
+            indicator._current_state = "transcribing"
 
             # Reset mock to clear initialization calls
             mock_window.attributes.reset_mock()

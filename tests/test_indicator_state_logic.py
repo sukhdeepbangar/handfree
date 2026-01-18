@@ -427,10 +427,13 @@ class TestCanvasDrawingProperties:
         # Should create a rectangle
         mock_canvas.create_rectangle.assert_called()
 
-    @given(state=st.sampled_from(["recording", "transcribing", "success", "error"]))
+    @given(state=st.sampled_from(["transcribing", "success", "error"]))
     @settings(max_examples=20)
     def test_non_idle_states_create_text(self, state):
-        """Property: Non-idle states (with text) create text on canvas."""
+        """Property: Non-idle states (with text) create text on canvas.
+
+        Note: Recording state uses animated bars instead of text, so it's excluded.
+        """
         indicator, _, mock_canvas = create_indicator_with_mocks()
 
         # Reset mock
