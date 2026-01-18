@@ -1,0 +1,269 @@
+# HandFree CI/CD - Test Workflow
+#
+# This workflow runs unit tests on all platforms and integration tests on macOS.
+# Integration tests use audio fixtures and whisper.cpp for transcription testing.
+#
+# Test Tiers:
+# - unit-tests: Fast tests that don't require hardware (all platforms)
+# - integration-tests: Fixture-based transcription tests (macOS only)
+#
+# See spec/integration_testing_spec.md for full details.
+
+name: Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  PYTHON_VERSION: "3.11"
+  # Use tiny.en model in CI (75MB, fastest)
+  HANDFREE_WHISPER_MODEL: "tiny.en"
+
+jobs:
+  # =============================================================================
+  # UNIT TESTS - Run on all platforms
+  # =============================================================================
+  unit-tests:
+    name: Unit Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+        exclude:
+          # Reduce matrix for faster CI
+          - os: windows-latest
+            python-version: "3.10"
+          - os: ubuntu-latest
+            python-version: "3.10"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y portaudio19-dev
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install portaudio || true
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          pip install -e ".[macos]"
+
+      - name: Run unit tests (exclude integration)
+        run: |
+          pytest tests/ -m "not integration" -v --tb=short --junitxml=test-results-unit.xml
+        env:
+          CI: "true"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-unit-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: test-results-unit.xml
+          retention-days: 7
+
+  # =============================================================================
+  # INTEGRATION TESTS - macOS only with whisper.cpp
+  # =============================================================================
+  integration-tests:
+    name: Integration Tests (macOS)
+    runs-on: macos-latest
+    needs: unit-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: macos-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            macos-pip-
+
+      - name: Cache whisper model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/whisper
+          key: whisper-model-tiny.en-v1
+          restore-keys: |
+            whisper-model-tiny.en-
+
+      - name: Install system dependencies
+        run: |
+          brew install portaudio ffmpeg || true
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[all]"
+
+      - name: Generate audio fixtures (fallback)
+        run: |
+          python tests/fixtures/audio_generator.py || echo "Audio generation skipped"
+        continue-on-error: true
+
+      - name: Download whisper model (tiny.en for CI)
+        run: |
+          python -m handfree.model_manager download tiny.en || echo "Model download skipped"
+        continue-on-error: true
+
+      - name: Run integration tests (no microphone)
+        run: |
+          pytest tests/integration/ -v -m "integration and not requires_microphone" \
+            --tb=short --junitxml=test-results-integration.xml
+        env:
+          CI: "true"
+          HANDFREE_WHISPER_MODEL: "tiny.en"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-integration
+          path: test-results-integration.xml
+          retention-days: 7
+
+      - name: Upload audio fixtures on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: audio-fixtures-debug
+          path: tests/fixtures/audio/
+          retention-days: 3
+
+  # =============================================================================
+  # FULL INTEGRATION TESTS - Manual trigger for complete testing
+  # =============================================================================
+  integration-tests-full:
+    name: Full Integration Tests
+    runs-on: macos-latest
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[full-test]')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: macos-pip-${{ hashFiles('**/pyproject.toml') }}
+
+      - name: Cache whisper model (base.en)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/whisper
+          key: whisper-model-base.en-v1
+          restore-keys: |
+            whisper-model-base.en-
+
+      - name: Install system dependencies
+        run: |
+          brew install portaudio ffmpeg || true
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[all]"
+
+      - name: Generate audio fixtures
+        run: |
+          python tests/fixtures/audio_generator.py || true
+        continue-on-error: true
+
+      - name: Download whisper model (base.en)
+        run: |
+          python -m handfree.model_manager download base.en || echo "Model download failed"
+        continue-on-error: true
+
+      - name: Run all integration tests
+        run: |
+          pytest tests/integration/ -v -m "integration" \
+            --tb=long --junitxml=test-results-full.xml
+        env:
+          CI: "true"
+          HANDFREE_WHISPER_MODEL: "base.en"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-full-integration
+          path: test-results-full.xml
+          retention-days: 14
+
+      - name: Upload logs on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: debug-logs
+          path: |
+            tests/fixtures/audio/
+            ~/.cache/whisper/*.log
+          retention-days: 7
+
+  # =============================================================================
+  # TEST SUMMARY
+  # =============================================================================
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          if [[ "${{ needs.unit-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
+            echo "::error::Some tests failed. Check the artifacts for details."
+            exit 1
+          fi
+          echo "All tests passed!"
