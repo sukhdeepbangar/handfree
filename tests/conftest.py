@@ -200,3 +200,71 @@ def test_audio_short():
 def mock_groq_env(monkeypatch):
     """Set up GROQ_API_KEY environment variable for a single test."""
     monkeypatch.setenv("GROQ_API_KEY", "test-api-key")
+
+
+# =============================================================================
+# HARDWARE DETECTION FIXTURES
+# =============================================================================
+
+@pytest.fixture(scope="session")
+def has_microphone() -> bool:
+    """Check if a microphone is available."""
+    try:
+        import sounddevice as sd
+        devices = sd.query_devices()
+        input_devices = [d for d in devices if d['max_input_channels'] > 0]
+        return len(input_devices) > 0
+    except Exception:
+        return False
+
+
+@pytest.fixture(scope="session")
+def has_whisper_model() -> bool:
+    """Check if whisper.cpp model is available."""
+    from pathlib import Path
+    model_path = Path.home() / ".cache" / "whisper" / "ggml-base.en.bin"
+    return model_path.exists()
+
+
+@pytest.fixture(scope="session")
+def is_ci_environment() -> bool:
+    """Check if running in CI environment."""
+    import os
+    ci_vars = ["CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL"]
+    return any(os.environ.get(var) for var in ci_vars)
+
+
+@pytest.fixture(scope="session")
+def has_accessibility_permission() -> bool:
+    """Check if accessibility permission is granted (macOS)."""
+    if sys.platform != "darwin":
+        return True
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["osascript", "-e", 'tell application "System Events" to return name of first process'],
+            capture_output=True, timeout=5
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+# =============================================================================
+# AUTO-SKIP FIXTURES
+# =============================================================================
+
+@pytest.fixture(autouse=True)
+def _auto_skip_by_marker(request, has_microphone, has_whisper_model, has_accessibility_permission):
+    """Automatically skip tests based on markers."""
+    if request.node.get_closest_marker("requires_microphone") and not has_microphone:
+        pytest.skip("No microphone available")
+
+    if request.node.get_closest_marker("requires_whisper") and not has_whisper_model:
+        pytest.skip("Whisper model not downloaded")
+
+    if request.node.get_closest_marker("requires_macos") and sys.platform != "darwin":
+        pytest.skip("Test requires macOS")
+
+    if request.node.get_closest_marker("requires_accessibility") and not has_accessibility_permission:
+        pytest.skip("Accessibility permission not granted")

@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "fixtures": [
+    {
+      "filename": "hello_world.wav",
+      "duration_sec": 2.0,
+      "sample_rate": 16000,
+      "expected_text": "Hello world",
+      "expected_text_normalized": "hello world",
+      "tolerance": 0.85,
+      "category": "short",
+      "notes": "Clear voice, neutral accent"
+    },
+    {
+      "filename": "silence.wav",
+      "duration_sec": 3.0,
+      "sample_rate": 16000,
+      "expected_text": "",
+      "tolerance": 1.0,
+      "category": "edge_case",
+      "notes": "Pure silence for edge case testing"
+    },
+    {
+      "filename": "short_phrase.wav",
+      "duration_sec": 3.0,
+      "sample_rate": 16000,
+      "expected_text": "This is a test",
+      "expected_text_normalized": "this is a test",
+      "tolerance": 0.75,
+      "category": "short",
+      "notes": "Simple four-word phrase"
+    },
+    {
+      "filename": "noise.wav",
+      "duration_sec": 3.0,
+      "sample_rate": 16000,
+      "expected_text": "",
+      "tolerance": 1.0,
+      "category": "edge_case",
+      "notes": "Low-level white noise"
+    }
+  ]
+}

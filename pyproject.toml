@@ -91,5 +91,10 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 markers = [
     "integration: marks tests as integration tests (may require hardware)",
+    "requires_microphone: marks tests requiring microphone access",
+    "requires_whisper: marks tests requiring whisper.cpp model",
+    "requires_macos: marks tests requiring macOS-specific features",
+    "requires_accessibility: marks tests requiring accessibility permissions",
+    "slow: marks tests as slow (> 5 seconds)",
 ]
 addopts = "-v --tb=short"
