@@ -21,7 +21,6 @@ try:
         NSPanel,
         NSView,
         NSColor,
-        NSFont,
         NSMakeRect,
         NSBezierPath,
         NSFloatingWindowLevel,
@@ -39,71 +38,42 @@ NSNonactivatingPanelMask = 1 << 7  # 128 - prevents panel from activating app
 
 
 class IndicatorView(NSView):
-    """Custom NSView that draws the recording indicator."""
+    """Custom NSView that draws the recording indicator as a simple colored dot."""
 
     def initWithFrame_(self, frame):
         self = objc.super(IndicatorView, self).initWithFrame_(frame)
         if self is None:
             return None
-
         self._state = "idle"
-        self._bar_heights = [8, 12, 6, 10]  # Static varied heights
-        self._bar_colors = [
-            NSColor.colorWithRed_green_blue_alpha_(1.0, 0.23, 0.19, 1.0),  # #FF3B30
-            NSColor.colorWithRed_green_blue_alpha_(1.0, 0.42, 0.36, 1.0),  # #FF6B5B
-            NSColor.colorWithRed_green_blue_alpha_(1.0, 0.58, 0.0, 1.0),   # #FF9500
-            NSColor.colorWithRed_green_blue_alpha_(1.0, 0.42, 0.36, 1.0),  # #FF6B5B
-        ]
-        self._bg_color = NSColor.colorWithRed_green_blue_alpha_(0.11, 0.11, 0.12, 0.95)
-
         return self
 
     def drawRect_(self, rect):
-        """Draw the indicator based on current state."""
-        # Draw background
-        self._bg_color.setFill()
-        NSBezierPath.fillRect_(self.bounds())
+        """Draw a simple colored circle based on state."""
+        bounds = self.bounds()
 
+        # Colors for different states (amber/blue theme)
         if self._state == "recording":
-            self._draw_bars()
+            # Amber color for recording
+            color = NSColor.colorWithRed_green_blue_alpha_(1.0, 0.75, 0.0, 1.0)
         elif self._state == "transcribing":
-            self._draw_text("...", NSColor.colorWithRed_green_blue_alpha_(1.0, 0.58, 0.0, 1.0))
+            # Blue color for transcribing
+            color = NSColor.colorWithRed_green_blue_alpha_(0.0, 0.48, 1.0, 1.0)
         elif self._state == "success":
-            self._draw_text("OK", NSColor.colorWithRed_green_blue_alpha_(0.2, 0.78, 0.35, 1.0))
+            color = NSColor.greenColor()
         elif self._state == "error":
-            self._draw_text("ERR", NSColor.colorWithRed_green_blue_alpha_(1.0, 0.23, 0.19, 1.0))
+            color = NSColor.orangeColor()
+        else:
+            return  # Don't draw anything for idle
 
-    def _draw_bars(self):
-        """Draw audio visualizer bars (static for now to avoid timer issues)."""
-        bounds = self.bounds()
-        bar_width = 6
-        bar_gap = 3
-        bar_count = 4
-        total_width = bar_count * bar_width + (bar_count - 1) * bar_gap
-        start_x = (bounds.size.width - total_width) / 2
-        center_y = bounds.size.height / 2
+        # Draw filled circle
+        size = min(bounds.size.width, bounds.size.height) - 4
+        x = (bounds.size.width - size) / 2
+        y = (bounds.size.height - size) / 2
+        oval_rect = NSMakeRect(x, y, size, size)
 
-        for i, height in enumerate(self._bar_heights):
-            x = start_x + i * (bar_width + bar_gap)
-            y = center_y - height / 2
-            rect = NSMakeRect(x, y, bar_width, height)
-            self._bar_colors[i].setFill()
-            NSBezierPath.fillRect_(rect)
-
-    def _draw_text(self, text, color):
-        """Draw centered text."""
-        bounds = self.bounds()
-        font = NSFont.boldSystemFontOfSize_(10)
-        from AppKit import NSAttributedString, NSFontAttributeName, NSForegroundColorAttributeName
-        attrs = {
-            NSFontAttributeName: font,
-            NSForegroundColorAttributeName: color,
-        }
-        attr_str = NSAttributedString.alloc().initWithString_attributes_(text, attrs)
-        size = attr_str.size()
-        x = (bounds.size.width - size.width) / 2
-        y = (bounds.size.height - size.height) / 2
-        attr_str.drawAtPoint_((x, y))
+        color.setFill()
+        path = NSBezierPath.bezierPathWithOvalInRect_(oval_rect)
+        path.fill()
 
     def setState_(self, state):
         """Set the indicator state."""
