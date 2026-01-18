@@ -143,6 +143,16 @@ class RecordingIndicator:
         """Configure platform-specific settings to prevent stealing focus."""
         try:
             if self._platform == "macos":
+                # Use Tk's unsupported MacWindowStyle with 'noActivates'
+                # This prevents the window from activating the app when shown
+                try:
+                    self.window.tk.call(
+                        '::tk::unsupported::MacWindowStyle', 'style',
+                        self.window._w, 'help', 'noActivates'
+                    )
+                except tk.TclError:
+                    pass
+                # Also try the PyObjC approach as backup
                 self._setup_macos_focus_prevention()
             elif self._platform == "linux":
                 # Linux: Set window type to prevent focus
@@ -543,6 +553,14 @@ class RecordingIndicator:
         """Show the indicator window without stealing focus."""
         # Re-apply focus prevention before showing (settings may reset after withdraw)
         if self._platform == "macos":
+            # Re-apply MacWindowStyle noActivates
+            try:
+                self.window.tk.call(
+                    '::tk::unsupported::MacWindowStyle', 'style',
+                    self.window._w, 'help', 'noActivates'
+                )
+            except tk.TclError:
+                pass
             self._setup_macos_focus_prevention()
 
         self.window.deiconify()
