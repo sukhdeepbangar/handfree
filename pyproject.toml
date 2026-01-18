@@ -55,6 +55,10 @@ macos = [
     "pyobjc-framework-Quartz>=9.0",
     "rumps>=0.4.0",
 ]
+# Local transcription using whisper.cpp (offline, private)
+local = [
+    "pywhispercpp>=1.2.0",
+]
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
@@ -63,7 +67,7 @@ dev = [
 ]
 # All optional dependencies for development
 all = [
-    "handfree[macos,dev]",
+    "handfree[macos,local,dev]",
 ]
 
 [project.scripts]

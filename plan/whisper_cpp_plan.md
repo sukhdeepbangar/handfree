@@ -27,14 +27,14 @@ This document provides a detailed step-by-step guide to add local transcription 
 - [ ] 1.4 Test transcription quality and latency
 
 ### Phase 2: LocalTranscriber Module
-- [ ] 2.1 Create `local_transcriber.py` with `LocalTranscriber` class
-- [ ] 2.2 Implement `__init__` with model loading
-- [ ] 2.3 Implement `transcribe()` method
-- [ ] 2.4 Implement `is_model_downloaded()` check
-- [ ] 2.5 Implement `download_model()` utility
-- [ ] 2.6 Add error handling for missing models
-- [ ] 2.7 Create `test_local_transcriber.py`
-- [ ] 2.8 Verify: Transcribe test audio locally
+- [x] 2.1 Create `local_transcriber.py` with `LocalTranscriber` class
+- [x] 2.2 Implement `__init__` with model loading
+- [x] 2.3 Implement `transcribe()` method
+- [x] 2.4 Implement `is_model_downloaded()` check
+- [x] 2.5 Implement `download_model()` utility
+- [x] 2.6 Add error handling for missing models
+- [x] 2.7 Create `test_local_transcriber.py`
+- [x] 2.8 Verify: Transcribe test audio locally (via unit tests with mocks)
 
 ### Phase 3: Configuration Updates
 - [ ] 3.1 Update `config.py` with new environment variables

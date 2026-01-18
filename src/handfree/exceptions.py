@@ -30,6 +30,11 @@ class TranscriptionError(HandFreeError):
     pass
 
 
+class LocalTranscriptionError(HandFreeError):
+    """Error transcribing audio locally via whisper.cpp."""
+    pass
+
+
 class OutputError(HandFreeError):
     """Error outputting text to clipboard or active application."""
     pass
