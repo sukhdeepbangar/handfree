@@ -1,0 +1,4 @@
+# file: /Users/sukhdeepsingh/projects/ClaudeProjects/handfree/src/handfree/storage/history_store.py
+# hypothesis_version: 6.150.2
+
+[1000, '.handfree', 'Text cannot be empty', 'a', 'duration_seconds', 'history.jsonl', 'id', 'language', 'r', 'text', 'timestamp', 'utf-8', 'w']

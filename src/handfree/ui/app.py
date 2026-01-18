@@ -4,10 +4,30 @@ HandFree UI Controller
 Manages the UI components in a separate thread with thread-safe state updates.
 """
 
+import sys
 import threading
 import tkinter as tk
 from pathlib import Path
 from typing import Callable, Optional
+
+
+def _set_macos_accessory_app() -> None:
+    """Set the app as an accessory app that never steals focus.
+
+    This MUST be called before creating any tkinter windows.
+    An accessory app:
+    - Never appears in the Dock (unless it has a visible window)
+    - Never receives focus when windows are shown
+    - Does not appear in Cmd+Tab app switcher
+    """
+    if sys.platform != "darwin":
+        return
+    try:
+        from AppKit import NSApp, NSApplicationActivationPolicyAccessory
+        NSApp.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
+    except Exception:
+        pass
+
 
 from handfree.ui.indicator import RecordingIndicator
 from handfree.ui.history import HistoryPanel
@@ -67,6 +87,10 @@ class HandFreeUI:
             return
 
         self._running = True
+
+        # On macOS, set app as accessory BEFORE creating any windows
+        # This prevents the app from ever stealing focus
+        _set_macos_accessory_app()
 
         # Create root window (hidden) - MUST be on main thread for macOS
         self._root = tk.Tk()

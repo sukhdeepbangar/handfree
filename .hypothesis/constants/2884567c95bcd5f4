@@ -1,0 +1,4 @@
+# file: /Users/sukhdeepsingh/projects/ClaudeProjects/handfree/src/handfree/ui/__init__.py
+# hypothesis_version: 6.150.2
+
+['HandFreeUI', 'HistoryPanel', 'MENUBAR_AVAILABLE', 'MenuBarApp', 'RecordingIndicator', 'create_menubar_app', 'is_menubar_available']

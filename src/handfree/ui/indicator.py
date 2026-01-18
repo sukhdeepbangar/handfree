@@ -12,7 +12,7 @@ from typing import Optional, List
 # PyObjC imports for macOS focus prevention
 if sys.platform == "darwin":
     try:
-        from AppKit import NSFloatingWindowLevel
+        from AppKit import NSFloatingWindowLevel, NSApp
         PYOBJC_AVAILABLE = True
     except ImportError:
         PYOBJC_AVAILABLE = False

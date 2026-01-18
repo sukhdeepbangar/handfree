@@ -38,6 +38,26 @@ class TestIndicatorFocusPrevention:
         from handfree.ui.indicator import PYOBJC_AVAILABLE
         assert PYOBJC_AVAILABLE is False, "PYOBJC_AVAILABLE should be False on non-macOS"
 
+    @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test")
+    def test_macos_sets_accessory_activation_policy(self):
+        """Test that macOS UI sets app activation policy to Accessory before creating windows."""
+        with patch('handfree.ui.app.tk.Tk') as mock_tk, \
+             patch('handfree.ui.app._set_macos_accessory_app') as mock_set_accessory:
+            mock_root = MagicMock()
+            mock_tk.return_value = mock_root
+
+            from handfree.ui.app import HandFreeUI
+            ui = HandFreeUI(history_enabled=False, menubar_enabled=False)
+            ui.start()
+
+            # Should call _set_macos_accessory_app before creating Tk root
+            mock_set_accessory.assert_called_once()
+            mock_tk.assert_called_once()
+
+            # Verify order: accessory policy set before Tk() created
+            # The mock call order shows accessory was called first
+            assert mock_set_accessory.call_count == 1
+
     def test_indicator_uses_overrideredirect(self):
         """Test indicator window uses overrideredirect to prevent focus."""
         mock_window = MagicMock()

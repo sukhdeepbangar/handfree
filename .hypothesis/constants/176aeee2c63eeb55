@@ -1,0 +1,4 @@
+# file: /Users/sukhdeepsingh/projects/ClaudeProjects/handfree/src/handfree/transcriber.py
+# hypothesis_version: 6.150.2
+
+['429', 'GROQ_API_KEY', 'audio.wav', 'rate_limit', 'text']

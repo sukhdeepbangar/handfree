@@ -1,0 +1,1 @@
+When in plan mode always write detailed spec to ./spec folder and a detailed implementation plan with todo tasks to ./plan folder 

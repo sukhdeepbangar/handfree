@@ -1,0 +1,4 @@
+# file: /Users/sukhdeepsingh/projects/ClaudeProjects/handfree/src/handfree/platform/__init__.py
+# hypothesis_version: 6.150.2
+
+[0.0, 'Ctrl+Shift+Space', 'Fn/Globe key', 'HotkeyDetectorBase', 'OutputHandlerBase', 'Unknown', 'darwin', 'dependency', 'get_platform', 'hotkey', 'linux', 'macos', 'output', 'unknown', 'win32', 'windows']

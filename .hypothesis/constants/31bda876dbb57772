@@ -1,0 +1,4 @@
+# file: /Users/sukhdeepsingh/projects/ClaudeProjects/handfree/src/handfree/platform/linux/output_handler.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.05, 1000, '--', '--clearmodifiers', '--delay', '--no-newline', '-M', '-P', '-d', '-m', '-p', 'DISPLAY', 'WAYLAND_DISPLAY', 'XDG_SESSION_TYPE', 'ctrl', 'ctrl+v', 'key', 'type', 'unknown', 'utf-8', 'v', 'wayland', 'wl-copy', 'wl-copy not found', 'wl-copy timed out', 'wl-paste', 'wtype', 'wtype not found', 'wtype timed out', 'x11', 'xdotool', 'xdotool not found', 'xdotool timed out']
