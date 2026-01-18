@@ -118,6 +118,7 @@ class HandFreeApp:
         self.config = config
         self.language = config.language
         self.use_paste = config.use_paste
+        self.skip_clipboard = config.skip_clipboard
         self.ui_enabled = config.ui_enabled
         self.history_enabled = config.history_enabled
 
@@ -246,8 +247,11 @@ class HandFreeApp:
             if text:
                 print(f"[Transcription] {text}")
                 try:
-                    self.output.output(text, use_paste=self.use_paste)
-                    print("[Output] Text copied to clipboard and typed")
+                    self.output.output(text, use_paste=self.use_paste, skip_clipboard=self.skip_clipboard)
+                    if self.skip_clipboard:
+                        print("[Output] Text typed")
+                    else:
+                        print("[Output] Text copied to clipboard and typed")
                     # Update UI - success
                     if self.ui:
                         self.ui.set_state("success")

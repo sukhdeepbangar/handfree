@@ -112,13 +112,14 @@ class OutputHandler:
         except subprocess.TimeoutExpired:
             raise OutputError("Paste operation timed out")
 
-    def output(self, text: str, use_paste: bool = False) -> None:
+    def output(self, text: str, use_paste: bool = False, skip_clipboard: bool = False) -> None:
         """
-        Copy text to clipboard AND type into active app.
+        Type text into active app, optionally copying to clipboard.
 
         Args:
             text: Transcribed text to output
             use_paste: If True, use clipboard paste instead of keystroke typing
+            skip_clipboard: If True, don't copy to clipboard (only type)
 
         Raises:
             OutputError: If output operation fails
@@ -126,12 +127,16 @@ class OutputHandler:
         if not text:
             return
 
-        # Always copy to clipboard first (as backup)
-        self.copy_to_clipboard(text)
+        # Copy to clipboard unless skip_clipboard is True
+        if not skip_clipboard:
+            self.copy_to_clipboard(text)
 
         # Then type or paste into active app
         if use_paste:
-            # Just paste - clipboard already has the text
+            # For paste mode, we need clipboard even if skip_clipboard is True
+            if skip_clipboard:
+                self.copy_to_clipboard(text)
+            # Paste from clipboard
             script = 'tell application "System Events" to keystroke "v" using command down'
             try:
                 subprocess.run(

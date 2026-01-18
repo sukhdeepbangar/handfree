@@ -176,6 +176,27 @@ class TestConfigBooleanParsing:
         config = Config.from_env()
         assert config.history_enabled is expected
 
+    @pytest.mark.parametrize("value,expected", [
+        ("true", True),
+        ("True", True),
+        ("1", True),
+        ("yes", True),
+        ("false", False),
+        ("False", False),
+        ("0", False),
+        ("no", False),
+        ("", False),  # Empty string defaults to False
+    ])
+    def test_skip_clipboard_boolean_parsing(self, value, expected, monkeypatch):
+        """HANDFREE_SKIP_CLIPBOARD is parsed correctly."""
+        monkeypatch.setenv("GROQ_API_KEY", "test-key")
+        monkeypatch.setenv("HANDFREE_SKIP_CLIPBOARD", value)
+
+        from handfree.config import Config
+
+        config = Config.from_env()
+        assert config.skip_clipboard is expected
+
 
 class TestConfigUIPosition:
     """Tests for UI position configuration."""

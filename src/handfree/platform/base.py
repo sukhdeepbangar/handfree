@@ -157,17 +157,15 @@ class OutputHandlerBase(ABC):
         """
         pass
 
-    def output(self, text: str, use_paste: bool = False) -> None:
+    def output(self, text: str, use_paste: bool = False, skip_clipboard: bool = False) -> None:
         """
-        Output text to active app using instant paste with clipboard restore.
-
-        This method pastes text instantly and restores the original clipboard
-        content afterward, so the user's clipboard is not polluted.
+        Output text to active app.
 
         Args:
             text: Transcribed text to output
             use_paste: Deprecated parameter, kept for backwards compatibility.
-                      Text is always output using instant paste.
+            skip_clipboard: If True, use keystroke typing instead of clipboard paste.
+                           This is slower but avoids touching the clipboard entirely.
 
         Raises:
             OutputError: If output operation fails
@@ -175,5 +173,9 @@ class OutputHandlerBase(ABC):
         if not text:
             return
 
-        # Use instant paste method (clipboard is restored after)
-        self.type_text_instant(text)
+        if skip_clipboard:
+            # Use direct keystroke typing (slower but no clipboard involvement)
+            self.type_text(text)
+        else:
+            # Use instant paste method (clipboard is restored after)
+            self.type_text_instant(text)

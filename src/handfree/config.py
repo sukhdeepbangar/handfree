@@ -45,6 +45,7 @@ class Config:
     type_delay: float = 0.0
     sample_rate: int = 16000
     use_paste: bool = False
+    skip_clipboard: bool = False  # If True, don't copy to clipboard
 
     # Optional with defaults - UI
     ui_enabled: bool = True
@@ -69,6 +70,7 @@ class Config:
             HANDFREE_TYPE_DELAY: Optional. Delay between keystrokes in seconds (default: 0).
             HANDFREE_SAMPLE_RATE: Optional. Audio sample rate in Hz (default: 16000).
             HANDFREE_USE_PASTE: Optional. Use clipboard paste instead of typing (default: false).
+            HANDFREE_SKIP_CLIPBOARD: Optional. Don't copy to clipboard, only type (default: false).
             HANDFREE_UI_ENABLED: Optional. Enable visual UI indicator (default: true).
             HANDFREE_UI_POSITION: Optional. Indicator position: top-center, top-right, top-left,
                                   bottom-center, bottom-right, bottom-left (default: top-center).
@@ -113,6 +115,7 @@ class Config:
             type_delay=float(os.environ.get("HANDFREE_TYPE_DELAY", "0")),
             sample_rate=int(os.environ.get("HANDFREE_SAMPLE_RATE", "16000")),
             use_paste=parse_bool(os.environ.get("HANDFREE_USE_PASTE", ""), False),
+            skip_clipboard=parse_bool(os.environ.get("HANDFREE_SKIP_CLIPBOARD", ""), False),
             ui_enabled=parse_bool(os.environ.get("HANDFREE_UI_ENABLED", "true"), True),
             ui_position=os.environ.get("HANDFREE_UI_POSITION", "top-center").lower(),
             history_enabled=parse_bool(os.environ.get("HANDFREE_HISTORY_ENABLED", "true"), True),
