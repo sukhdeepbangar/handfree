@@ -22,18 +22,18 @@ This plan implements two features in priority order:
 **Goal**: Add always-on-top visual indicator showing recording state
 
 ### Step 1.1: Create UI Module Structure
-- [ ] 1.1.1 Create `src/handfree/ui/__init__.py`
-- [ ] 1.1.2 Create `src/handfree/ui/indicator.py` with `RecordingIndicator` class stub
-- [ ] 1.1.3 Create `src/handfree/ui/app.py` with `HandFreeUI` class stub
-- [ ] 1.1.4 Update `src/handfree/__init__.py` to export UI classes
+- [x] 1.1.1 Create `src/handfree/ui/__init__.py`
+- [x] 1.1.2 Create `src/handfree/ui/indicator.py` with `RecordingIndicator` class stub
+- [x] 1.1.3 Create `src/handfree/ui/app.py` with `HandFreeUI` class stub
+- [x] 1.1.4 Update `src/handfree/__init__.py` to export UI classes
 
 ### Step 1.2: Implement Recording Indicator
-- [ ] 1.2.1 Implement tkinter window setup (no decorations, always-on-top)
-- [ ] 1.2.2 Position window at top-center of screen
-- [ ] 1.2.3 Implement `set_state()` with color/text changes for each state
-- [ ] 1.2.4 Add semi-transparency (alpha = 0.9)
-- [ ] 1.2.5 Implement `show()` and `hide()` methods
-- [ ] 1.2.6 Add rounded rectangle drawing for indicator background
+- [x] 1.2.1 Implement tkinter window setup (no decorations, always-on-top)
+- [x] 1.2.2 Position window at top-center of screen
+- [x] 1.2.3 Implement `set_state()` with color/text changes for each state
+- [x] 1.2.4 Add semi-transparency (alpha = 0.9)
+- [x] 1.2.5 Implement `show()` and `hide()` methods
+- [x] 1.2.6 Add rounded rectangle drawing for indicator background
 
 **States to implement**:
 | State | Color | Text |
@@ -45,21 +45,21 @@ This plan implements two features in priority order:
 | error | #FF3B30 | ERR |
 
 ### Step 1.3: Implement UI Controller
-- [ ] 1.3.1 Implement `HandFreeUI.start()` to run UI in daemon thread
-- [ ] 1.3.2 Implement `HandFreeUI._run_ui()` with tkinter mainloop
-- [ ] 1.3.3 Implement thread-safe `set_state()` using `root.after()`
-- [ ] 1.3.4 Implement `stop()` to cleanly shutdown UI thread
+- [x] 1.3.1 Implement `HandFreeUI.start()` to run UI in daemon thread
+- [x] 1.3.2 Implement `HandFreeUI._run_ui()` with tkinter mainloop
+- [x] 1.3.3 Implement thread-safe `set_state()` using `root.after()`
+- [x] 1.3.4 Implement `stop()` to cleanly shutdown UI thread
 
 ### Step 1.4: Integrate with Main Application
-- [ ] 1.4.1 Import `HandFreeUI` in `main.py`
-- [ ] 1.4.2 Initialize UI in `HandFreeApp.__init__()`
-- [ ] 1.4.3 Call `ui.start()` in `HandFreeApp.run()`
-- [ ] 1.4.4 Update state machine to call `ui.set_state()`:
+- [x] 1.4.1 Import `HandFreeUI` in `main.py`
+- [x] 1.4.2 Initialize UI in `HandFreeApp.__init__()`
+- [x] 1.4.3 Call `ui.start()` in `HandFreeApp.run()`
+- [x] 1.4.4 Update state machine to call `ui.set_state()`:
   - `handle_unmute()` → `ui.set_state("recording")`
   - `handle_mute()` start → `ui.set_state("transcribing")`
   - `handle_mute()` success → `ui.set_state("success")` then `ui.set_state("idle")`
   - `handle_mute()` error → `ui.set_state("error")` then `ui.set_state("idle")`
-- [ ] 1.4.5 Call `ui.stop()` in cleanup
+- [x] 1.4.5 Call `ui.stop()` in cleanup
 
 ### Step 1.5: Testing
 - [ ] 1.5.1 Manual test: indicator appears when Fn pressed
@@ -299,5 +299,5 @@ This plan implements two features in priority order:
 | Phase 1: Recording Indicator | Complete | UI indicator with states (idle, recording, transcribing, success, error); 34 property-based tests for state logic |
 | Phase 2: Transcription History | Complete | JSONL-based storage, history panel UI, integrated with main app, history toggle hotkey (Cmd+H/Ctrl+H) |
 | Phase 3: Platform Abstraction | Complete | Platform factory with macOS/Windows/Linux implementations, 43 new tests |
-| Phase 4: Windows/Linux Support | Complete | All implementations done including xdotool/wtype fallback for Wayland (4.3.3); Added 78 comprehensive unit tests for WindowsHotkeyDetector (37) and LinuxHotkeyDetector (41) with property-based testing; pending: VM testing (4.5) |
-| Phase 5: Polish | In Progress | Step 5.1 (Configuration) complete with 75+ tests; Step 5.2 (UI Refinements) complete with 29 new tests; Step 5.3 (Error Handling) complete with 38 new tests; Step 5.4 (Documentation) complete with 87 tests; Step 5.5.1 (macOS testing) complete with 812 tests passing; remaining: Windows/Linux testing (5.5.2-5.5.5) |
+| Phase 4: Windows/Linux Support | Complete | All implementations done including xdotool/wtype fallback for Wayland (4.3.3); Added 111 comprehensive unit tests for hotkey detectors: MacOSHotkeyDetector (33), WindowsHotkeyDetector (37), LinuxHotkeyDetector (41) with property-based testing; pending: VM testing (4.5) |
+| Phase 5: Polish | In Progress | Step 5.1 (Configuration) complete with 75+ tests; Step 5.2 (UI Refinements) complete with 29 new tests; Step 5.3 (Error Handling) complete with 38 new tests; Step 5.4 (Documentation) complete with 87 tests; Step 5.5.1 (macOS testing) complete with 845 tests passing; remaining: Windows/Linux testing (5.5.2-5.5.5) |
