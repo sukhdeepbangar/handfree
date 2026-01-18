@@ -181,18 +181,21 @@ class TestOutputHandlerBase(unittest.TestCase):
                 pass
             def type_text_via_paste(self, text):
                 pass
+            def type_text_instant(self, text):
+                pass
 
         handler = ConcreteHandler(type_delay=0.05)
         self.assertEqual(handler.type_delay, 0.05)
 
-    def test_output_method_uses_type_text(self):
-        """Test output method calls type_text when use_paste=False."""
+    def test_output_method_uses_type_text_instant(self):
+        """Test output method calls type_text_instant (new behavior)."""
         class ConcreteHandler(OutputHandlerBase):
             def __init__(self, type_delay):
                 super().__init__(type_delay)
                 self.clipboard_called = False
                 self.type_text_called = False
                 self.paste_called = False
+                self.instant_called = False
 
             def copy_to_clipboard(self, text):
                 self.clipboard_called = True
@@ -202,48 +205,53 @@ class TestOutputHandlerBase(unittest.TestCase):
 
             def type_text_via_paste(self, text):
                 self.paste_called = True
+
+            def type_text_instant(self, text):
+                self.instant_called = True
 
         handler = ConcreteHandler(0.0)
         handler.output("Test", use_paste=False)
 
-        self.assertTrue(handler.clipboard_called)
-        self.assertTrue(handler.type_text_called)
+        # New behavior: output() always uses type_text_instant()
+        self.assertFalse(handler.clipboard_called)  # No longer called directly
+        self.assertFalse(handler.type_text_called)
         self.assertFalse(handler.paste_called)
+        self.assertTrue(handler.instant_called)
 
-    def test_output_method_uses_paste(self):
-        """Test output method calls type_text_via_paste when use_paste=True."""
+    def test_output_method_ignores_use_paste_flag(self):
+        """Test output method ignores use_paste flag (always uses instant)."""
         class ConcreteHandler(OutputHandlerBase):
             def __init__(self, type_delay):
                 super().__init__(type_delay)
-                self.clipboard_called = False
-                self.type_text_called = False
-                self.paste_called = False
+                self.instant_called = False
 
             def copy_to_clipboard(self, text):
-                self.clipboard_called = True
+                pass
 
             def type_text(self, text):
-                self.type_text_called = True
+                pass
 
             def type_text_via_paste(self, text):
-                self.paste_called = True
+                pass
+
+            def type_text_instant(self, text):
+                self.instant_called = True
 
         handler = ConcreteHandler(0.0)
         handler.output("Test", use_paste=True)
 
-        self.assertTrue(handler.clipboard_called)
-        self.assertFalse(handler.type_text_called)
-        self.assertTrue(handler.paste_called)
+        # Even with use_paste=True, should use type_text_instant
+        self.assertTrue(handler.instant_called)
 
     def test_output_empty_string(self):
         """Test output method does nothing for empty string."""
         class ConcreteHandler(OutputHandlerBase):
             def __init__(self, type_delay):
                 super().__init__(type_delay)
-                self.clipboard_called = False
+                self.instant_called = False
 
             def copy_to_clipboard(self, text):
-                self.clipboard_called = True
+                pass
 
             def type_text(self, text):
                 pass
@@ -251,10 +259,13 @@ class TestOutputHandlerBase(unittest.TestCase):
             def type_text_via_paste(self, text):
                 pass
 
+            def type_text_instant(self, text):
+                self.instant_called = True
+
         handler = ConcreteHandler(0.0)
         handler.output("")
 
-        self.assertFalse(handler.clipboard_called)
+        self.assertFalse(handler.instant_called)
 
 
 class TestCreateHotkeyDetectorFactory(unittest.TestCase):

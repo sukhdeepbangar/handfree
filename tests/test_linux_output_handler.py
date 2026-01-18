@@ -561,40 +561,55 @@ class TestLinuxOutputHandlerIntegration(unittest.TestCase):
     @patch("handfree.platform.linux.output_handler.get_display_server")
     @patch("handfree.platform.linux.output_handler.Controller")
     @patch("handfree.platform.linux.output_handler.pyperclip")
-    def test_output_method_copies_and_types(self, mock_pyperclip, mock_controller, mock_display, mock_tool):
-        """Test output() method copies to clipboard and types."""
+    @patch("handfree.platform.linux.output_handler.time.sleep")
+    def test_output_method_uses_instant_paste(self, mock_sleep, mock_pyperclip, mock_controller, mock_display, mock_tool):
+        """Test output() method uses type_text_instant (new behavior)."""
         mock_display.return_value = "x11"
         mock_tool.return_value = False
         mock_keyboard = MagicMock()
         mock_controller.return_value = mock_keyboard
+        mock_pyperclip.paste.return_value = "original"
 
         from handfree.platform.linux.output_handler import LinuxOutputHandler
         handler = LinuxOutputHandler()
         handler.output("Hello", use_paste=False)
 
-        mock_pyperclip.copy.assert_called_once_with("Hello")
-        self.assertTrue(mock_keyboard.type.called)
+        # New behavior: type_text_instant copies text, pastes, then restores clipboard
+        # So copy is called twice: once for "Hello", once for "original" (restore)
+        self.assertEqual(mock_pyperclip.copy.call_count, 2)
+        copy_calls = mock_pyperclip.copy.call_args_list
+        self.assertEqual(copy_calls[0][0][0], "Hello")
+        self.assertEqual(copy_calls[1][0][0], "original")
+        # Should use Ctrl+V for pasting
+        self.assertTrue(mock_keyboard.press.called)
 
     @patch("handfree.platform.linux.output_handler.is_tool_available")
     @patch("handfree.platform.linux.output_handler.get_display_server")
     @patch("handfree.platform.linux.output_handler.Controller")
     @patch("handfree.platform.linux.output_handler.pyperclip")
     @patch("handfree.platform.linux.output_handler.time.sleep")
-    def test_output_method_with_paste(self, mock_sleep, mock_pyperclip, mock_controller, mock_display, mock_tool):
-        """Test output() method with use_paste=True."""
+    def test_output_method_ignores_use_paste_flag(self, mock_sleep, mock_pyperclip, mock_controller, mock_display, mock_tool):
+        """Test output() method ignores use_paste flag (always uses instant)."""
         mock_display.return_value = "x11"
         mock_tool.return_value = False
         mock_keyboard = MagicMock()
         mock_controller.return_value = mock_keyboard
+        mock_pyperclip.paste.return_value = "original"
 
         from handfree.platform.linux.output_handler import LinuxOutputHandler
         handler = LinuxOutputHandler()
-        handler.output("Hello", use_paste=True)
 
-        # Should copy twice (once in output, once in type_text_via_paste)
-        # Actually the output() base method calls copy_to_clipboard first
-        self.assertTrue(mock_pyperclip.copy.called)
-        self.assertTrue(mock_keyboard.press.called)
+        # Both calls should behave the same (use instant paste)
+        handler.output("Test1", use_paste=False)
+        call_count_1 = mock_pyperclip.copy.call_count
+        mock_pyperclip.reset_mock()
+
+        handler.output("Test2", use_paste=True)
+        call_count_2 = mock_pyperclip.copy.call_count
+
+        # Both should call copy twice (text + restore)
+        self.assertEqual(call_count_1, 2)
+        self.assertEqual(call_count_2, 2)
 
 
 if __name__ == "__main__":

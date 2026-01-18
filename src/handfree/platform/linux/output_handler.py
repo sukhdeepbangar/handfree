@@ -382,3 +382,97 @@ class LinuxOutputHandler(OutputHandlerBase):
             raise OutputError("wtype timed out")
         except FileNotFoundError:
             raise OutputError("wtype not found")
+
+    def _get_clipboard_content(self) -> Optional[str]:
+        """
+        Get current clipboard content.
+
+        Returns:
+            Current clipboard text, or None if unavailable
+        """
+        # On Wayland, try wl-paste first
+        if self._display_server == "wayland" and is_tool_available("wl-paste"):
+            try:
+                result = subprocess.run(
+                    ["wl-paste", "--no-newline"],
+                    capture_output=True,
+                    timeout=5,
+                )
+                if result.returncode == 0:
+                    return result.stdout.decode("utf-8")
+            except Exception:
+                pass
+
+        # Fallback to pyperclip
+        try:
+            return pyperclip.paste()
+        except Exception:
+            return None
+
+    def type_text_instant(self, text: str) -> None:
+        """
+        Insert text instantly using clipboard paste, then restore clipboard.
+
+        This method:
+        1. Saves current clipboard content
+        2. Copies text to clipboard
+        3. Pastes using Ctrl+V
+        4. Restores original clipboard content
+
+        Args:
+            text: Text to insert at cursor position
+
+        Raises:
+            OutputError: If paste operation fails
+        """
+        if not text:
+            return
+
+        # Save current clipboard content
+        original_clipboard = self._get_clipboard_content()
+
+        try:
+            # Copy text to clipboard
+            self.copy_to_clipboard(text)
+
+            # Small delay to ensure clipboard is updated
+            time.sleep(0.05)
+
+            # Paste using Ctrl+V via the appropriate method
+            if self._display_server == "wayland":
+                if self._has_wtype:
+                    self._paste_with_wtype()
+                else:
+                    raise OutputError(
+                        "Cannot paste on Wayland: wtype is not installed. "
+                        "Please install wtype: https://github.com/atx/wtype"
+                    )
+            else:
+                # X11: try pynput first, then xdotool
+                if self._keyboard is not None:
+                    try:
+                        self._paste_with_pynput()
+                    except Exception as e:
+                        logger.warning(f"pynput paste failed, trying xdotool fallback: {e}")
+                        if self._has_xdotool:
+                            self._paste_with_xdotool()
+                        else:
+                            raise OutputError(f"Failed to paste text: {e}")
+                elif self._has_xdotool:
+                    self._paste_with_xdotool()
+                else:
+                    raise OutputError(
+                        "Failed to paste text: pynput unavailable and xdotool not found. "
+                        "Please install xdotool: sudo apt install xdotool"
+                    )
+
+            # Wait for paste to complete
+            time.sleep(0.05)
+
+        finally:
+            # Restore original clipboard
+            if original_clipboard is not None:
+                try:
+                    self.copy_to_clipboard(original_clipboard)
+                except Exception:
+                    pass  # Best effort restoration

@@ -138,13 +138,36 @@ class OutputHandlerBase(ABC):
         """
         pass
 
+    @abstractmethod
+    def type_text_instant(self, text: str) -> None:
+        """
+        Insert text instantly using paste, then restore clipboard.
+
+        This method:
+        1. Saves current clipboard content
+        2. Copies text to clipboard
+        3. Pastes using platform keyboard shortcut (Cmd+V / Ctrl+V)
+        4. Restores original clipboard content
+
+        Args:
+            text: Text to insert at cursor position
+
+        Raises:
+            OutputError: If operation fails
+        """
+        pass
+
     def output(self, text: str, use_paste: bool = False) -> None:
         """
-        Copy text to clipboard AND type/paste into active app.
+        Output text to active app using instant paste with clipboard restore.
+
+        This method pastes text instantly and restores the original clipboard
+        content afterward, so the user's clipboard is not polluted.
 
         Args:
             text: Transcribed text to output
-            use_paste: If True, use clipboard paste instead of keystroke typing
+            use_paste: Deprecated parameter, kept for backwards compatibility.
+                      Text is always output using instant paste.
 
         Raises:
             OutputError: If output operation fails
@@ -152,11 +175,5 @@ class OutputHandlerBase(ABC):
         if not text:
             return
 
-        # Always copy to clipboard first (as backup)
-        self.copy_to_clipboard(text)
-
-        # Then type or paste into active app
-        if use_paste:
-            self.type_text_via_paste(text)
-        else:
-            self.type_text(text)
+        # Use instant paste method (clipboard is restored after)
+        self.type_text_instant(text)

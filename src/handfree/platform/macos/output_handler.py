@@ -5,6 +5,7 @@ Handles text output via clipboard and AppleScript typing.
 """
 
 import subprocess
+import time
 
 import pyperclip
 
@@ -103,3 +104,59 @@ class MacOSOutputHandler(OutputHandlerBase):
             raise OutputError(f"Failed to paste text: {stderr}")
         except subprocess.TimeoutExpired:
             raise OutputError("Paste operation timed out")
+
+    def type_text_instant(self, text: str) -> None:
+        """
+        Insert text instantly using clipboard paste, then restore clipboard.
+
+        This method:
+        1. Saves current clipboard content
+        2. Copies text to clipboard
+        3. Pastes using Cmd+V
+        4. Restores original clipboard content
+
+        Args:
+            text: Text to insert at cursor position
+
+        Raises:
+            OutputError: If paste operation fails
+        """
+        if not text:
+            return
+
+        # Save current clipboard content
+        original_clipboard = None
+        try:
+            original_clipboard = pyperclip.paste()
+        except Exception:
+            pass  # Clipboard might be empty or contain non-text
+
+        try:
+            # Copy text to clipboard
+            pyperclip.copy(text)
+
+            # Paste using Cmd+V
+            script = 'tell application "System Events" to keystroke "v" using command down'
+            try:
+                subprocess.run(
+                    ['osascript', '-e', script],
+                    check=True,
+                    capture_output=True,
+                    timeout=10
+                )
+            except subprocess.CalledProcessError as e:
+                stderr = e.stderr.decode() if e.stderr else str(e)
+                raise OutputError(f"Failed to paste text: {stderr}")
+            except subprocess.TimeoutExpired:
+                raise OutputError("Paste operation timed out")
+
+            # Wait for paste to complete
+            time.sleep(0.05)
+
+        finally:
+            # Restore original clipboard
+            if original_clipboard is not None:
+                try:
+                    pyperclip.copy(original_clipboard)
+                except Exception:
+                    pass  # Best effort restoration

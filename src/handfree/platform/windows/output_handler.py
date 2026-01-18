@@ -94,3 +94,56 @@ class WindowsOutputHandler(OutputHandlerBase):
             self._keyboard.release(Key.ctrl)
         except Exception as e:
             raise OutputError(f"Failed to paste text: {e}")
+
+    def type_text_instant(self, text: str) -> None:
+        """
+        Insert text instantly using clipboard paste, then restore clipboard.
+
+        This method:
+        1. Saves current clipboard content
+        2. Copies text to clipboard
+        3. Pastes using Ctrl+V
+        4. Restores original clipboard content
+
+        Args:
+            text: Text to insert at cursor position
+
+        Raises:
+            OutputError: If paste operation fails
+        """
+        if not text:
+            return
+
+        # Save current clipboard content
+        original_clipboard = None
+        try:
+            original_clipboard = pyperclip.paste()
+        except Exception:
+            pass  # Clipboard might be empty or contain non-text
+
+        try:
+            # Copy text to clipboard
+            pyperclip.copy(text)
+
+            # Small delay to ensure clipboard is updated
+            time.sleep(0.05)
+
+            # Paste using Ctrl+V
+            try:
+                self._keyboard.press(Key.ctrl)
+                self._keyboard.press('v')
+                self._keyboard.release('v')
+                self._keyboard.release(Key.ctrl)
+            except Exception as e:
+                raise OutputError(f"Failed to paste text: {e}")
+
+            # Wait for paste to complete
+            time.sleep(0.05)
+
+        finally:
+            # Restore original clipboard
+            if original_clipboard is not None:
+                try:
+                    pyperclip.copy(original_clipboard)
+                except Exception:
+                    pass  # Best effort restoration
