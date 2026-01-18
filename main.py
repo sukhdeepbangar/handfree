@@ -17,8 +17,10 @@ from dotenv import load_dotenv
 from handfree.audio_recorder import AudioRecorder
 from handfree.config import Config
 from handfree.transcriber import Transcriber
+from handfree.local_transcriber import LocalTranscriber
 from handfree.exceptions import (
     TranscriptionError,
+    LocalTranscriptionError,
     OutputError,
     UIInitializationError,
     HotkeyDetectorError,
@@ -38,6 +40,53 @@ from handfree.platform import (
 logger = logging.getLogger(__name__)
 
 
+def get_transcriber(config: Config) -> tuple:
+    """
+    Create transcriber based on configuration.
+
+    Implements factory pattern with fallback logic:
+    - If config.transcriber == "local": try local first, fallback to cloud if model missing
+    - If config.transcriber == "groq": use cloud transcription
+
+    Args:
+        config: Application configuration
+
+    Returns:
+        Tuple of (transcriber_instance, transcriber_mode_string)
+    """
+    if config.transcriber == "local":
+        local_transcriber = LocalTranscriber(
+            model_name=config.whisper_model,
+            models_dir=config.models_dir
+        )
+
+        if not local_transcriber.is_model_downloaded():
+            logger.warning(
+                f"Local model '{config.whisper_model}' not downloaded at {config.models_dir}"
+            )
+            if config.groq_api_key:
+                # Fallback to cloud transcription
+                logger.info("Falling back to Groq cloud transcription")
+                print(f"[Warning] Local model '{config.whisper_model}' not found.")
+                print("          Falling back to Groq cloud transcription.")
+                print(f"          To download: python -m handfree.model_manager download {config.whisper_model}")
+                return Transcriber(api_key=config.groq_api_key), "groq (fallback)"
+            else:
+                # No fallback available - download model
+                logger.info("No Groq API key for fallback, downloading model...")
+                print(f"[Info] Downloading model '{config.whisper_model}' (this may take a few minutes)...")
+                local_transcriber.download_model()
+
+        mode = f"local (whisper.cpp, model: {config.whisper_model})"
+        logger.info(f"Using local transcription: {mode}")
+        return local_transcriber, mode
+    else:
+        # Cloud (Groq) transcription
+        mode = "groq (cloud)"
+        logger.info(f"Using cloud transcription: {mode}")
+        return Transcriber(api_key=config.groq_api_key), mode
+
+
 class AppState(Enum):
     """Application state machine states."""
     IDLE = auto()
@@ -50,27 +99,13 @@ class HandFreeApp:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        language: Optional[str] = None,
-        type_delay: float = 0.0,
-        sample_rate: int = 16000,
-        use_paste: bool = False,
-        ui_enabled: bool = True,
-        ui_position: str = "top-center",
-        history_enabled: bool = True
+        config: Config,
     ):
         """
         Initialize all components.
 
         Args:
-            api_key: Groq API key. If None, reads from GROQ_API_KEY env var.
-            language: Language code for transcription. Auto-detected if None.
-            type_delay: Delay between keystrokes in seconds.
-            sample_rate: Audio sample rate in Hz.
-            use_paste: If True, use clipboard paste instead of keystroke typing.
-            ui_enabled: If True, show visual UI indicator.
-            ui_position: Position for UI indicator (top-center, top-right, etc.).
-            history_enabled: If True, save transcriptions to history database.
+            config: Application configuration loaded from environment.
         """
         # Load environment variables
         load_dotenv()
@@ -80,22 +115,23 @@ class HandFreeApp:
         logger.info(f"Platform detected: {platform}")
 
         # Store configuration
-        self.language = language or os.environ.get("HANDFREE_LANGUAGE")
-        self.use_paste = use_paste
-        self.ui_enabled = ui_enabled
-        self.history_enabled = history_enabled
+        self.config = config
+        self.language = config.language
+        self.use_paste = config.use_paste
+        self.ui_enabled = config.ui_enabled
+        self.history_enabled = config.history_enabled
 
         # Initialize audio recorder
-        self.recorder = AudioRecorder(sample_rate=sample_rate)
-        logger.debug(f"Audio recorder initialized (sample_rate={sample_rate})")
+        self.recorder = AudioRecorder(sample_rate=config.sample_rate)
+        logger.debug(f"Audio recorder initialized (sample_rate={config.sample_rate})")
 
-        # Initialize transcriber
-        self.transcriber = Transcriber(api_key=api_key)
-        logger.debug("Transcriber initialized")
+        # Initialize transcriber using factory function
+        self.transcriber, self.transcriber_mode = get_transcriber(config)
+        logger.debug(f"Transcriber initialized: {self.transcriber_mode}")
 
         # Initialize output handler with error handling
         try:
-            self.output = create_output_handler(type_delay=type_delay)
+            self.output = create_output_handler(type_delay=config.type_delay)
             logger.info(f"Output handler initialized: {type(self.output).__name__}")
         except PlatformNotSupportedError as e:
             logger.error(f"Output handler initialization failed: {e}")
@@ -106,15 +142,15 @@ class HandFreeApp:
 
         # Initialize UI with graceful degradation
         self.ui = None
-        if ui_enabled:
+        if config.ui_enabled:
             try:
                 self.ui = HandFreeUI(
-                    history_enabled=history_enabled,
-                    indicator_position=ui_position,
+                    history_enabled=config.history_enabled,
+                    indicator_position=config.ui_position,
                     menubar_enabled=True,
                     on_quit=self._handle_quit_from_menu
                 )
-                logger.info(f"UI initialized (position={ui_position}, history={history_enabled}, menubar=True)")
+                logger.info(f"UI initialized (position={config.ui_position}, history={config.history_enabled}, menubar=True)")
             except Exception as e:
                 # UI failure is non-fatal - continue without UI
                 logger.warning(f"UI initialization failed, continuing without visual indicator: {e}")
@@ -197,8 +233,11 @@ class HandFreeApp:
                 self.ui.set_state("error")
             return
 
-        # Transcribe
-        print("[Transcribing] Sending to Groq API...")
+        # Transcribe - show appropriate message based on transcriber mode
+        if self.config.transcriber == "local" and isinstance(self.transcriber, LocalTranscriber):
+            print(f"[Transcribing] Processing locally ({self.config.whisper_model})...")
+        else:
+            print("[Transcribing] Sending to Groq API...")
         try:
             text = self.transcriber.transcribe(
                 audio_bytes,
@@ -229,7 +268,7 @@ class HandFreeApp:
                 # Update UI - error
                 if self.ui:
                     self.ui.set_state("error")
-        except TranscriptionError as e:
+        except (TranscriptionError, LocalTranscriptionError) as e:
             print(f"[Error] Transcription failed: {e}")
             # Update UI - error
             if self.ui:
@@ -287,7 +326,8 @@ class HandFreeApp:
         print("=" * 55)
         print()
         print(f"  Platform: {platform}")
-        print(f"  Mode: {hotkey} (hold to record)")
+        print(f"  Transcription: {self.transcriber_mode}")
+        print(f"  Hotkey: {hotkey} (hold to record)")
         print()
         print("  Usage:")
         print(f"    1. HOLD {hotkey:<20} -> Recording starts")
@@ -374,16 +414,7 @@ def main():
 
     # Create application with validated config
     try:
-        app = HandFreeApp(
-            api_key=config.groq_api_key,
-            language=config.language,
-            type_delay=config.type_delay,
-            sample_rate=config.sample_rate,
-            use_paste=config.use_paste,
-            ui_enabled=config.ui_enabled,
-            ui_position=config.ui_position,
-            history_enabled=config.history_enabled
-        )
+        app = HandFreeApp(config=config)
     except HotkeyDetectorError as e:
         print(f"Error: {e}")
         logger.error(f"Hotkey detector error: {e}")

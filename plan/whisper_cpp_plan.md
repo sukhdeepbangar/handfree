@@ -44,11 +44,11 @@ This document provides a detailed step-by-step guide to add local transcription 
 - [x] 3.5 Update `.env.example` with new options
 
 ### Phase 4: Main App Integration
-- [ ] 4.1 Update `main.py` to support transcriber selection
-- [ ] 4.2 Create factory function `get_transcriber()`
-- [ ] 4.3 Add fallback logic (local -> cloud if model missing)
-- [ ] 4.4 Add startup message showing transcriber mode
-- [ ] 4.5 Verify: End-to-end flow works with local transcription
+- [x] 4.1 Update `main.py` to support transcriber selection
+- [x] 4.2 Create factory function `get_transcriber()`
+- [x] 4.3 Add fallback logic (local -> cloud if model missing)
+- [x] 4.4 Add startup message showing transcriber mode
+- [x] 4.5 Verify: End-to-end flow works with local transcription
 
 ### Phase 5: Model Management
 - [ ] 5.1 Create `model_manager.py` utility

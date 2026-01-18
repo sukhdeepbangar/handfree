@@ -10,7 +10,27 @@ PERFORMANCE NOTE: Mocks are set up in conftest.py - no need to duplicate here.
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 
+from handfree.config import Config
+
 # tkinter mocking is handled by conftest.py
+
+
+def make_config(**kwargs):
+    """Helper to create Config with defaults for testing."""
+    defaults = {
+        "groq_api_key": "test-api-key",
+        "transcriber": "groq",
+        "whisper_model": "base.en",
+        "language": None,
+        "type_delay": 0.0,
+        "sample_rate": 16000,
+        "use_paste": False,
+        "ui_enabled": False,  # Disable UI for tests
+        "ui_position": "top-center",
+        "history_enabled": False,
+    }
+    defaults.update(kwargs)
+    return Config(**defaults)
 
 
 class TestRecordingIndicatorStructure:
@@ -154,7 +174,7 @@ class TestUIDisabling:
     """Tests for UI disabling functionality."""
 
     def test_main_app_accepts_ui_enabled_parameter(self):
-        """Test that HandFreeApp accepts ui_enabled parameter."""
+        """Test that HandFreeApp accepts ui_enabled via Config."""
         import inspect
         import sys
         import os
@@ -164,13 +184,14 @@ class TestUIDisabling:
 
         from main import HandFreeApp
 
-        # Check that __init__ accepts ui_enabled parameter
+        # Check that __init__ accepts config parameter (which contains ui_enabled)
         sig = inspect.signature(HandFreeApp.__init__)
-        assert 'ui_enabled' in sig.parameters, "HandFreeApp should accept ui_enabled parameter"
+        assert 'config' in sig.parameters, "HandFreeApp should accept config parameter"
 
-        # Check default value is True
-        param = sig.parameters['ui_enabled']
-        assert param.default is True, "ui_enabled should default to True"
+        # Check that Config has ui_enabled attribute
+        config = make_config()
+        assert hasattr(config, 'ui_enabled'), "Config should have ui_enabled attribute"
+        assert isinstance(config.ui_enabled, bool), "ui_enabled should be a boolean"
 
     def test_main_app_can_disable_ui(self):
         """Test that HandFreeApp can be created with UI disabled."""
@@ -182,15 +203,18 @@ class TestUIDisabling:
 
         # Mock dependencies - use the correct paths after refactoring
         with patch('main.AudioRecorder'), \
-             patch('main.Transcriber'), \
+             patch('main.get_transcriber') as mock_get_transcriber, \
              patch('main.create_output_handler'), \
              patch('main.create_hotkey_detector'), \
              patch('main.load_dotenv'):
 
             from main import HandFreeApp
 
+            mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+
             # Should not raise exception
-            app = HandFreeApp(ui_enabled=False)
+            config = make_config(ui_enabled=False)
+            app = HandFreeApp(config=config)
             assert app.ui is None  # UI should be None when disabled
 
 

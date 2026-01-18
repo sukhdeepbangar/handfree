@@ -9,10 +9,29 @@ PERFORMANCE NOTE: Mocks are set up in conftest.py - no need to duplicate here.
 import pytest
 from unittest.mock import Mock, patch
 
-from handfree.exceptions import TranscriptionError, OutputError
+from handfree.config import Config
+from handfree.exceptions import TranscriptionError, OutputError, LocalTranscriptionError
 
 # Mocks are already set up in conftest.py - no need to duplicate here
-from main import HandFreeApp, AppState, main
+from main import HandFreeApp, AppState, main, get_transcriber
+
+
+def make_config(**kwargs):
+    """Helper to create Config with defaults for testing."""
+    defaults = {
+        "groq_api_key": "test-api-key",
+        "transcriber": "groq",
+        "whisper_model": "base.en",
+        "language": None,
+        "type_delay": 0.0,
+        "sample_rate": 16000,
+        "use_paste": False,
+        "ui_enabled": False,  # Disable UI for tests
+        "ui_position": "top-center",
+        "history_enabled": False,
+    }
+    defaults.update(kwargs)
+    return Config(**defaults)
 
 
 class TestAppState:
@@ -40,56 +59,66 @@ class TestHandFreeAppInit:
 
     @patch('main.create_hotkey_detector')
     @patch('main.AudioRecorder')
-    @patch('main.Transcriber')
+    @patch('main.get_transcriber')
     @patch('main.create_output_handler')
-    def test_init_creates_all_modules(self, mock_output, mock_transcriber,
+    def test_init_creates_all_modules(self, mock_output, mock_get_transcriber,
                                        mock_recorder, mock_detector):
         """HandFreeApp initializes all required modules."""
-        app = HandFreeApp(api_key="test-key")
+        mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+        config = make_config()
+        app = HandFreeApp(config=config)
 
         mock_recorder.assert_called_once()
-        mock_transcriber.assert_called_once_with(api_key="test-key")
+        mock_get_transcriber.assert_called_once_with(config)
         mock_output.assert_called_once()
         mock_detector.assert_called_once()
 
     @patch('main.create_hotkey_detector')
     @patch('main.AudioRecorder')
-    @patch('main.Transcriber')
+    @patch('main.get_transcriber')
     @patch('main.create_output_handler')
-    def test_init_default_state_is_idle(self, mock_output, mock_transcriber,
+    def test_init_default_state_is_idle(self, mock_output, mock_get_transcriber,
                                          mock_recorder, mock_detector):
         """HandFreeApp starts in IDLE state."""
-        app = HandFreeApp(api_key="test-key")
+        mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+        config = make_config()
+        app = HandFreeApp(config=config)
         assert app.state == AppState.IDLE
 
     @patch('main.create_hotkey_detector')
     @patch('main.AudioRecorder')
-    @patch('main.Transcriber')
+    @patch('main.get_transcriber')
     @patch('main.create_output_handler')
-    def test_init_not_running(self, mock_output, mock_transcriber,
+    def test_init_not_running(self, mock_output, mock_get_transcriber,
                                mock_recorder, mock_detector):
         """HandFreeApp is not running after init."""
-        app = HandFreeApp(api_key="test-key")
+        mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+        config = make_config()
+        app = HandFreeApp(config=config)
         assert app.is_running is False
 
     @patch('main.create_hotkey_detector')
     @patch('main.AudioRecorder')
-    @patch('main.Transcriber')
+    @patch('main.get_transcriber')
     @patch('main.create_output_handler')
-    def test_init_custom_sample_rate(self, mock_output, mock_transcriber,
+    def test_init_custom_sample_rate(self, mock_output, mock_get_transcriber,
                                       mock_recorder, mock_detector):
         """HandFreeApp passes sample rate to AudioRecorder."""
-        app = HandFreeApp(api_key="test-key", sample_rate=44100)
+        mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+        config = make_config(sample_rate=44100)
+        app = HandFreeApp(config=config)
         mock_recorder.assert_called_once_with(sample_rate=44100)
 
     @patch('main.create_hotkey_detector')
     @patch('main.AudioRecorder')
-    @patch('main.Transcriber')
+    @patch('main.get_transcriber')
     @patch('main.create_output_handler')
-    def test_init_custom_type_delay(self, mock_output, mock_transcriber,
+    def test_init_custom_type_delay(self, mock_output, mock_get_transcriber,
                                      mock_recorder, mock_detector):
         """HandFreeApp passes type delay to OutputHandler."""
-        app = HandFreeApp(api_key="test-key", type_delay=0.05)
+        mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+        config = make_config(type_delay=0.05)
+        app = HandFreeApp(config=config)
         mock_output.assert_called_once_with(type_delay=0.05)
 
 
@@ -106,10 +135,12 @@ class TestHandFreeAppStateMachine:
         """Create a HandFreeApp with mocked dependencies."""
         with patch('main.create_hotkey_detector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
-             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.get_transcriber') as mock_get_transcriber, \
              patch('main.create_output_handler') as mock_output:
 
-            app = HandFreeApp(api_key="test-key")
+            mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+            config = make_config()
+            app = HandFreeApp(config=config)
 
             # Set up mock instances
             app.recorder = Mock()
@@ -233,10 +264,12 @@ class TestHandFreeAppLifecycle:
         """Create a HandFreeApp with mocked dependencies."""
         with patch('main.create_hotkey_detector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
-             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.get_transcriber') as mock_get_transcriber, \
              patch('main.create_output_handler') as mock_output:
 
-            app = HandFreeApp(api_key="test-key")
+            mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+            config = make_config()
+            app = HandFreeApp(config=config)
             app.recorder = Mock()
             app.detector = Mock()
 
@@ -285,12 +318,14 @@ class TestHandFreeAppLanguage:
 
     @patch('main.create_hotkey_detector')
     @patch('main.AudioRecorder')
-    @patch('main.Transcriber')
+    @patch('main.get_transcriber')
     @patch('main.create_output_handler')
-    def test_language_passed_to_transcriber(self, mock_output, mock_transcriber,
+    def test_language_passed_to_transcriber(self, mock_output, mock_get_transcriber,
                                              mock_recorder, mock_detector):
         """Language is passed to transcriber.transcribe()."""
-        app = HandFreeApp(api_key="test-key", language="en")
+        mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+        config = make_config(language="en")
+        app = HandFreeApp(config=config)
 
         # Set up mocks
         app.recorder = Mock()
@@ -320,12 +355,14 @@ class TestHandFreeAppUsePaste:
 
     @patch('main.create_hotkey_detector')
     @patch('main.AudioRecorder')
-    @patch('main.Transcriber')
+    @patch('main.get_transcriber')
     @patch('main.create_output_handler')
-    def test_use_paste_passed_to_output(self, mock_output, mock_transcriber,
+    def test_use_paste_passed_to_output(self, mock_output, mock_get_transcriber,
                                          mock_recorder, mock_detector):
         """use_paste is passed to output.output()."""
-        app = HandFreeApp(api_key="test-key", use_paste=True)
+        mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+        config = make_config(use_paste=True)
+        app = HandFreeApp(config=config)
 
         app.recorder = Mock()
         app.transcriber = Mock()
@@ -346,8 +383,9 @@ class TestMainFunction:
 
     @patch('handfree.config.load_dotenv')
     def test_main_exits_without_api_key(self, mock_load_dotenv, monkeypatch):
-        """main() exits with error when GROQ_API_KEY is not set."""
+        """main() exits with error when GROQ_API_KEY is not set and transcriber is groq."""
         monkeypatch.delenv("GROQ_API_KEY", raising=False)
+        monkeypatch.setenv("HANDFREE_TRANSCRIBER", "groq")
 
         with pytest.raises(SystemExit) as exc_info:
             main()
@@ -373,16 +411,16 @@ class TestMainFunction:
             main()
 
         assert exc_info.value.code == 1
-        mock_app_class.assert_called_once_with(
-            api_key="test-key",
-            language="es",
-            type_delay=0.1,
-            sample_rate=22050,
-            use_paste=True,
-            ui_enabled=True,
-            ui_position="top-center",
-            history_enabled=True
-        )
+        # Now takes a config object instead of individual args
+        mock_app_class.assert_called_once()
+        call_kwargs = mock_app_class.call_args[1]
+        assert "config" in call_kwargs
+        config = call_kwargs["config"]
+        assert config.groq_api_key == "test-key"
+        assert config.language == "es"
+        assert config.type_delay == 0.1
+        assert config.sample_rate == 22050
+        assert config.use_paste is True
 
 
 class TestConfigModule:
@@ -489,10 +527,12 @@ class TestStateMachineProperties:
         """Create a HandFreeApp with mocked dependencies."""
         with patch('main.create_hotkey_detector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
-             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.get_transcriber') as mock_get_transcriber, \
              patch('main.create_output_handler') as mock_output:
 
-            app = HandFreeApp(api_key="test-key")
+            mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+            config = make_config()
+            app = HandFreeApp(config=config)
             app.recorder = Mock()
             app.transcriber = Mock()
             app.output = Mock()
@@ -579,10 +619,12 @@ class TestStateMachineSequences:
         """Create a HandFreeApp with mocked dependencies."""
         with patch('main.create_hotkey_detector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
-             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.get_transcriber') as mock_get_transcriber, \
              patch('main.create_output_handler') as mock_output:
 
-            app = HandFreeApp(api_key="test-key")
+            mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+            config = make_config()
+            app = HandFreeApp(config=config)
             app.recorder = Mock()
             app.transcriber = Mock()
             app.output = Mock()
@@ -717,10 +759,12 @@ class TestRunLoopBehavior:
         """Create a HandFreeApp with mocked dependencies."""
         with patch('main.create_hotkey_detector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
-             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.get_transcriber') as mock_get_transcriber, \
              patch('main.create_output_handler') as mock_output:
 
-            app = HandFreeApp(api_key="test-key")
+            mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+            config = make_config()
+            app = HandFreeApp(config=config)
             app.recorder = Mock()
             app.transcriber = Mock()
             app.output = Mock()

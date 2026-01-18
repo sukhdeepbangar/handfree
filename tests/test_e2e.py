@@ -19,6 +19,7 @@ from conftest.py to minimize test overhead.
 import pytest
 from unittest.mock import Mock, patch
 
+from handfree.config import Config
 from handfree.exceptions import (
     TranscriptionError,
     OutputError,
@@ -28,6 +29,24 @@ from handfree.exceptions import (
 
 # Mocks are already set up in conftest.py - no need to duplicate here
 from main import HandFreeApp, AppState, main
+
+
+def make_config(**kwargs):
+    """Helper to create Config with defaults for testing."""
+    defaults = {
+        "groq_api_key": "test-api-key",
+        "transcriber": "groq",
+        "whisper_model": "base.en",
+        "language": None,
+        "type_delay": 0.0,
+        "sample_rate": 16000,
+        "use_paste": False,
+        "ui_enabled": False,  # Disable UI for tests
+        "ui_position": "top-center",
+        "history_enabled": False,
+    }
+    defaults.update(kwargs)
+    return Config(**defaults)
 
 
 # Use the cached create_test_audio from conftest via pytest fixture mechanism
@@ -75,10 +94,12 @@ def mock_handfree_app(setup_groq_env):
     """
     with patch('main.create_hotkey_detector') as mock_detector, \
          patch('main.AudioRecorder') as mock_recorder, \
-         patch('main.Transcriber') as mock_transcriber, \
+         patch('main.get_transcriber') as mock_get_transcriber, \
          patch('main.create_output_handler') as mock_output:
 
-        app = HandFreeApp(api_key="test-key")
+        mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+        config = make_config()
+        app = HandFreeApp(config=config)
 
         # Create mock instances with proper return values
         app.recorder = Mock()
@@ -521,13 +542,14 @@ class TestE2EDetectorErrors:
 
         with patch('main.create_hotkey_detector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
-             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.get_transcriber') as mock_get_transcriber, \
              patch('main.create_output_handler') as mock_output:
 
+            mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
             mock_detector.side_effect = RuntimeError("Failed to create event tap")
 
             with pytest.raises(HotkeyDetectorError) as exc_info:
-                HandFreeApp(api_key="test-key")
+                HandFreeApp(config=make_config())
 
             assert "Failed to create event tap" in str(exc_info.value)
 
@@ -535,14 +557,15 @@ class TestE2EDetectorErrors:
         """Graceful handling when HotkeyDetector.start() fails."""
         with patch('main.create_hotkey_detector') as mock_detector_class, \
              patch('main.AudioRecorder') as mock_recorder, \
-             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.get_transcriber') as mock_get_transcriber, \
              patch('main.create_output_handler') as mock_output:
 
+            mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
             mock_detector = Mock()
             mock_detector_class.return_value = mock_detector
             mock_detector.start.side_effect = RuntimeError("Failed to start hotkey detection")
 
-            app = HandFreeApp(api_key="test-key")
+            app = HandFreeApp(config=make_config())
 
             with pytest.raises(RuntimeError):
                 app.run()
@@ -551,22 +574,24 @@ class TestE2EDetectorErrors:
         """Graceful handling when audio recording fails."""
         with patch('main.create_hotkey_detector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder_class, \
-             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.get_transcriber') as mock_get_transcriber, \
              patch('main.create_output_handler') as mock_output:
 
+            mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
             mock_recorder_class.side_effect = AudioRecordingError("No audio device")
 
             with pytest.raises(AudioRecordingError):
-                HandFreeApp(api_key="test-key")
+                HandFreeApp(config=make_config())
 
     def test_transcription_api_failure(self, setup_groq_env):
         """Graceful handling when transcription API fails."""
         with patch('main.create_hotkey_detector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
-             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.get_transcriber') as mock_get_transcriber, \
              patch('main.create_output_handler') as mock_output:
 
-            app = HandFreeApp(api_key="test-key")
+            mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+            app = HandFreeApp(config=make_config())
             app.recorder = Mock()
             app.transcriber = Mock()
             app.output = Mock()
@@ -587,10 +612,11 @@ class TestE2EDetectorErrors:
         """Graceful handling when output handler fails."""
         with patch('main.create_hotkey_detector') as mock_detector, \
              patch('main.AudioRecorder') as mock_recorder, \
-             patch('main.Transcriber') as mock_transcriber, \
+             patch('main.get_transcriber') as mock_get_transcriber, \
              patch('main.create_output_handler') as mock_output:
 
-            app = HandFreeApp(api_key="test-key")
+            mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
+            app = HandFreeApp(config=make_config())
             app.recorder = Mock()
             app.transcriber = Mock()
             app.output = Mock()
@@ -639,16 +665,16 @@ class TestE2EEnvironmentConfiguration:
             with pytest.raises(SystemExit):
                 main()
 
-            mock_handfree_app_class.assert_called_once_with(
-                api_key="test-key",
-                language="es",
-                type_delay=0.1,
-                sample_rate=22050,
-                use_paste=True,
-                ui_enabled=True,
-                ui_position="top-center",
-                history_enabled=True
-            )
+            # Now takes a config object instead of individual args
+            mock_handfree_app_class.assert_called_once()
+            call_kwargs = mock_handfree_app_class.call_args[1]
+            assert "config" in call_kwargs
+            config = call_kwargs["config"]
+            assert config.groq_api_key == "test-key"
+            assert config.language == "es"
+            assert config.type_delay == 0.1
+            assert config.sample_rate == 22050
+            assert config.use_paste is True
 
 
 class TestE2EPropertyBased:

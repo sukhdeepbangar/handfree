@@ -11,6 +11,7 @@ from unittest.mock import patch, MagicMock, PropertyMock
 
 import pytest
 
+from handfree.config import Config
 from handfree.exceptions import (
     HandFreeError,
     UIInitializationError,
@@ -25,6 +26,24 @@ from handfree.platform import (
     create_output_handler,
     PLATFORM_ERROR_MESSAGES,
 )
+
+
+def make_config(**kwargs):
+    """Helper to create Config with defaults for testing."""
+    defaults = {
+        "groq_api_key": "test-api-key",
+        "transcriber": "groq",
+        "whisper_model": "base.en",
+        "language": None,
+        "type_delay": 0.0,
+        "sample_rate": 16000,
+        "use_paste": False,
+        "ui_enabled": False,  # Disable UI for tests
+        "ui_position": "top-center",
+        "history_enabled": False,
+    }
+    defaults.update(kwargs)
+    return Config(**defaults)
 
 
 # Check if tkinter is available
@@ -259,32 +278,31 @@ class TestHandFreeAppErrorHandling(unittest.TestCase):
     @patch('main.create_hotkey_detector')
     @patch('main.create_output_handler')
     @patch('main.AudioRecorder')
-    @patch('main.Transcriber')
+    @patch('main.get_transcriber')
     @patch('main.HandFreeUI')
     @patch('main.get_platform', return_value='macos')
     def test_app_continues_without_ui_on_failure(
-        self, mock_platform, mock_ui, mock_transcriber,
+        self, mock_platform, mock_ui, mock_get_transcriber,
         mock_recorder, mock_output, mock_hotkey, mock_logger
     ):
         """Test app continues if UI fails to initialize."""
         from main import HandFreeApp
+        from unittest.mock import Mock
 
         # Make UI initialization fail
         mock_ui.side_effect = Exception("Display not available")
+        mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
 
         # App should still initialize without UI
-        app = HandFreeApp(
-            api_key="test_key",
-            ui_enabled=True,
-            history_enabled=True
-        )
+        config = make_config(ui_enabled=True, history_enabled=True)
+        app = HandFreeApp(config=config)
 
         # UI should be None due to failure
         self.assertIsNone(app.ui)
 
         # Other components should be initialized
         mock_recorder.assert_called_once()
-        mock_transcriber.assert_called_once()
+        mock_get_transcriber.assert_called_once()
         mock_output.assert_called_once()
         mock_hotkey.assert_called_once()
 
@@ -292,41 +310,45 @@ class TestHandFreeAppErrorHandling(unittest.TestCase):
     @patch('main.create_hotkey_detector')
     @patch('main.create_output_handler')
     @patch('main.AudioRecorder')
-    @patch('main.Transcriber')
+    @patch('main.get_transcriber')
     @patch('main.get_platform', return_value='macos')
     def test_app_raises_on_hotkey_detector_failure(
-        self, mock_platform, mock_transcriber,
+        self, mock_platform, mock_get_transcriber,
         mock_recorder, mock_output, mock_hotkey, mock_logger
     ):
         """Test app raises HotkeyDetectorError on hotkey detector failure."""
         from main import HandFreeApp
         from handfree.exceptions import HotkeyDetectorError
+        from unittest.mock import Mock
 
+        mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
         # Make hotkey detector fail with PlatformNotSupportedError
         mock_hotkey.side_effect = PlatformNotSupportedError("Hotkey detection failed")
 
         with self.assertRaises(HotkeyDetectorError):
-            HandFreeApp(api_key="test_key", ui_enabled=False)
+            HandFreeApp(config=make_config())
 
     @patch('main.logger')
     @patch('main.create_hotkey_detector')
     @patch('main.create_output_handler')
     @patch('main.AudioRecorder')
-    @patch('main.Transcriber')
+    @patch('main.get_transcriber')
     @patch('main.get_platform', return_value='macos')
     def test_app_raises_on_output_handler_failure(
-        self, mock_platform, mock_transcriber,
+        self, mock_platform, mock_get_transcriber,
         mock_recorder, mock_output, mock_hotkey, mock_logger
     ):
         """Test app raises OutputHandlerError on output handler failure."""
         from main import HandFreeApp
         from handfree.exceptions import OutputHandlerError
+        from unittest.mock import Mock
 
+        mock_get_transcriber.return_value = (Mock(), "groq (cloud)")
         # Make output handler fail
         mock_output.side_effect = PlatformNotSupportedError("Output handler failed")
 
         with self.assertRaises(OutputHandlerError):
-            HandFreeApp(api_key="test_key", ui_enabled=False)
+            HandFreeApp(config=make_config())
 
 
 class TestPlatformLogging(unittest.TestCase):
