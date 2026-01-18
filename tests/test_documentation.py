@@ -3,6 +3,12 @@ Tests for project documentation.
 
 Validates that README.md exists, contains required sections,
 and is consistent with the actual project structure.
+
+These tests ensure documentation stays up-to-date with features:
+- Cross-platform support (macOS, Windows, Linux)
+- UI components (indicator, history panel)
+- Environment variables
+- Installation instructions
 """
 
 import os
@@ -363,3 +369,283 @@ class TestEnvExampleConsistency:
                     var_name = match.group(1)
                     assert var_name in readme_content, \
                         f"{var_name} from .env.example should be documented in README"
+
+
+class TestCrossPlatformDocumentation:
+    """Tests for cross-platform support documentation."""
+
+    @pytest.fixture
+    def readme_content(self):
+        """Load README content."""
+        readme_path = PROJECT_ROOT / "README.md"
+        return readme_path.read_text()
+
+    def test_mentions_cross_platform(self, readme_content):
+        """README should mention cross-platform support."""
+        content_lower = readme_content.lower()
+        assert "cross-platform" in content_lower or (
+            "macos" in content_lower and
+            "windows" in content_lower and
+            "linux" in content_lower
+        ), "Should mention cross-platform support"
+
+    def test_mentions_macos(self, readme_content):
+        """README should mention macOS support."""
+        assert "macOS" in readme_content, "Should mention macOS"
+
+    def test_mentions_windows(self, readme_content):
+        """README should mention Windows support."""
+        assert "Windows" in readme_content, "Should mention Windows"
+
+    def test_mentions_linux(self, readme_content):
+        """README should mention Linux support."""
+        assert "Linux" in readme_content, "Should mention Linux"
+
+    def test_has_macos_installation(self, readme_content):
+        """README should have macOS installation section."""
+        assert "### macOS" in readme_content, "Should have macOS installation section"
+
+    def test_has_windows_installation(self, readme_content):
+        """README should have Windows installation section."""
+        assert "### Windows" in readme_content, "Should have Windows installation section"
+
+    def test_has_linux_installation(self, readme_content):
+        """README should have Linux installation section."""
+        assert "### Linux" in readme_content, "Should have Linux installation section"
+
+    def test_mentions_ctrl_shift_space(self, readme_content):
+        """README should mention Ctrl+Shift+Space hotkey for Windows/Linux."""
+        assert "Ctrl+Shift+Space" in readme_content, \
+            "Should mention Ctrl+Shift+Space hotkey for Windows/Linux"
+
+    def test_mentions_wayland(self, readme_content):
+        """README should mention Wayland for Linux users."""
+        assert "Wayland" in readme_content or "wayland" in readme_content, \
+            "Should mention Wayland for Linux"
+
+    def test_mentions_x11(self, readme_content):
+        """README should mention X11 for Linux users."""
+        assert "X11" in readme_content or "x11" in readme_content, \
+            "Should mention X11 for Linux"
+
+    def test_mentions_wtype(self, readme_content):
+        """README should mention wtype for Wayland."""
+        assert "wtype" in readme_content, "Should mention wtype for Wayland"
+
+    def test_mentions_xdotool(self, readme_content):
+        """README should mention xdotool for X11."""
+        assert "xdotool" in readme_content, "Should mention xdotool for X11"
+
+
+class TestUIDocumentation:
+    """Tests for UI components documentation."""
+
+    @pytest.fixture
+    def readme_content(self):
+        """Load README content."""
+        readme_path = PROJECT_ROOT / "README.md"
+        return readme_path.read_text()
+
+    def test_mentions_visual_indicator(self, readme_content):
+        """README should mention the visual indicator."""
+        content_lower = readme_content.lower()
+        assert "indicator" in content_lower, "Should mention visual indicator"
+
+    def test_mentions_history_panel(self, readme_content):
+        """README should mention the history panel."""
+        content_lower = readme_content.lower()
+        assert "history" in content_lower, "Should mention history panel"
+
+    def test_describes_indicator_states(self, readme_content):
+        """README should describe indicator states."""
+        # Should mention recording, transcribing states
+        content_lower = readme_content.lower()
+        assert "rec" in content_lower or "recording" in content_lower, \
+            "Should describe recording state"
+
+    def test_mentions_indicator_colors(self, readme_content):
+        """README should mention indicator colors."""
+        content_lower = readme_content.lower()
+        assert "red" in content_lower or "green" in content_lower or "orange" in content_lower, \
+            "Should mention indicator colors"
+
+    def test_mentions_history_toggle_hotkey(self, readme_content):
+        """README should mention how to toggle history panel."""
+        assert "Cmd+H" in readme_content or "Ctrl+H" in readme_content, \
+            "Should mention history toggle hotkey"
+
+    def test_mentions_copy_functionality(self, readme_content):
+        """README should mention copy functionality in history."""
+        content_lower = readme_content.lower()
+        assert "copy" in content_lower, "Should mention copy functionality"
+
+
+class TestUIEnvironmentVariables:
+    """Tests for UI-related environment variables documentation."""
+
+    @pytest.fixture
+    def readme_content(self):
+        """Load README content."""
+        readme_path = PROJECT_ROOT / "README.md"
+        return readme_path.read_text()
+
+    def test_ui_enabled_documented(self, readme_content):
+        """HANDFREE_UI_ENABLED should be documented."""
+        assert "HANDFREE_UI_ENABLED" in readme_content
+
+    def test_ui_position_documented(self, readme_content):
+        """HANDFREE_UI_POSITION should be documented."""
+        assert "HANDFREE_UI_POSITION" in readme_content
+
+    def test_history_enabled_documented(self, readme_content):
+        """HANDFREE_HISTORY_ENABLED should be documented."""
+        assert "HANDFREE_HISTORY_ENABLED" in readme_content
+
+    def test_history_max_documented(self, readme_content):
+        """HANDFREE_HISTORY_MAX should be documented."""
+        assert "HANDFREE_HISTORY_MAX" in readme_content
+
+    def test_hotkey_documented(self, readme_content):
+        """HANDFREE_HOTKEY should be documented."""
+        assert "HANDFREE_HOTKEY" in readme_content
+
+    def test_debug_documented(self, readme_content):
+        """HANDFREE_DEBUG should be documented."""
+        assert "HANDFREE_DEBUG" in readme_content
+
+
+class TestPlatformDirectoryDocumentation:
+    """Tests for platform directory structure documentation."""
+
+    @pytest.fixture
+    def readme_content(self):
+        """Load README content."""
+        readme_path = PROJECT_ROOT / "README.md"
+        return readme_path.read_text()
+
+    def test_mentions_platform_module(self, readme_content):
+        """README should mention platform module."""
+        assert "platform/" in readme_content, "Should mention platform directory"
+
+    def test_mentions_macos_directory(self, readme_content):
+        """README should mention macOS platform directory."""
+        assert "macos/" in readme_content, "Should mention macos directory"
+
+    def test_mentions_windows_directory(self, readme_content):
+        """README should mention Windows platform directory."""
+        assert "windows/" in readme_content, "Should mention windows directory"
+
+    def test_mentions_linux_directory(self, readme_content):
+        """README should mention Linux platform directory."""
+        assert "linux/" in readme_content, "Should mention linux directory"
+
+    def test_mentions_ui_module(self, readme_content):
+        """README should mention UI module."""
+        assert "ui/" in readme_content, "Should mention ui directory"
+
+    def test_mentions_storage_module(self, readme_content):
+        """README should mention storage module."""
+        assert "storage/" in readme_content, "Should mention storage directory"
+
+
+class TestHotkeyReferenceTable:
+    """Tests for hotkey reference table in documentation."""
+
+    @pytest.fixture
+    def readme_content(self):
+        """Load README content."""
+        readme_path = PROJECT_ROOT / "README.md"
+        return readme_path.read_text()
+
+    def test_has_hotkey_reference_section(self, readme_content):
+        """README should have a hotkey reference section."""
+        assert "Hotkey Reference" in readme_content or "hotkey" in readme_content.lower(), \
+            "Should have hotkey reference section"
+
+    def test_documents_macos_fn_key(self, readme_content):
+        """README should document Fn/Globe key for macOS."""
+        assert "Fn" in readme_content and "Globe" in readme_content, \
+            "Should document Fn/Globe key for macOS"
+
+    def test_documents_platform_specific_hotkeys(self, readme_content):
+        """README should document platform-specific hotkeys."""
+        # Check for table structure with platforms and hotkeys
+        assert "| Platform |" in readme_content or "| macOS |" in readme_content, \
+            "Should have platform hotkey table"
+
+
+class TestLinuxSpecificDocumentation:
+    """Tests for Linux-specific documentation."""
+
+    @pytest.fixture
+    def readme_content(self):
+        """Load README content."""
+        readme_path = PROJECT_ROOT / "README.md"
+        return readme_path.read_text()
+
+    def test_mentions_apt_install(self, readme_content):
+        """README should mention apt install for Debian/Ubuntu."""
+        assert "apt install" in readme_content or "apt-get install" in readme_content, \
+            "Should mention apt install for Debian/Ubuntu"
+
+    def test_mentions_dnf_install(self, readme_content):
+        """README should mention dnf install for Fedora."""
+        assert "dnf install" in readme_content, "Should mention dnf install for Fedora"
+
+    def test_mentions_input_group(self, readme_content):
+        """README should mention input group for Linux permissions."""
+        assert "input" in readme_content.lower(), "Should mention input group"
+
+    def test_mentions_audio_group(self, readme_content):
+        """README should mention audio group for Linux permissions."""
+        content_lower = readme_content.lower()
+        assert "audio" in content_lower, "Should mention audio group"
+
+    def test_mentions_wl_clipboard(self, readme_content):
+        """README should mention wl-clipboard for Wayland."""
+        assert "wl-clipboard" in readme_content or "wl-copy" in readme_content, \
+            "Should mention wl-clipboard for Wayland"
+
+
+class TestWindowsSpecificDocumentation:
+    """Tests for Windows-specific documentation."""
+
+    @pytest.fixture
+    def readme_content(self):
+        """Load README content."""
+        readme_path = PROJECT_ROOT / "README.md"
+        return readme_path.read_text()
+
+    def test_mentions_windows_10(self, readme_content):
+        """README should mention Windows 10 support."""
+        assert "Windows 10" in readme_content, "Should mention Windows 10"
+
+    def test_mentions_administrator(self, readme_content):
+        """README should mention running as Administrator."""
+        assert "administrator" in readme_content.lower() or "Administrator" in readme_content, \
+            "Should mention Administrator mode"
+
+    def test_mentions_windows_venv_activation(self, readme_content):
+        """README should mention Windows venv activation syntax."""
+        assert "venv\\Scripts\\activate" in readme_content or \
+               r"venv\Scripts\activate" in readme_content, \
+            "Should mention Windows venv activation"
+
+
+class TestTkinterDocumentation:
+    """Tests for tkinter/UI framework documentation."""
+
+    @pytest.fixture
+    def readme_content(self):
+        """Load README content."""
+        readme_path = PROJECT_ROOT / "README.md"
+        return readme_path.read_text()
+
+    def test_mentions_tkinter(self, readme_content):
+        """README should mention tkinter for UI issues."""
+        assert "tkinter" in readme_content or "tk" in readme_content.lower(), \
+            "Should mention tkinter"
+
+    def test_mentions_python3_tk_package(self, readme_content):
+        """README should mention python3-tk package for Linux."""
+        assert "python3-tk" in readme_content, "Should mention python3-tk package"

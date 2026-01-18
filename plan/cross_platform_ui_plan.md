@@ -238,11 +238,11 @@ This plan implements two features in priority order:
 - [x] 5.3.6 Add 38 unit tests for error handling (test_error_handling.py)
 
 ### Step 5.4: Documentation
-- [ ] 5.4.1 Update README.md with cross-platform instructions
-- [ ] 5.4.2 Document Windows installation steps
-- [ ] 5.4.3 Document Linux installation steps (including dependencies)
-- [ ] 5.4.4 Update environment variables table
-- [ ] 5.4.5 Add screenshots of UI indicator and history panel
+- [x] 5.4.1 Update README.md with cross-platform instructions
+- [x] 5.4.2 Document Windows installation steps
+- [x] 5.4.3 Document Linux installation steps (including dependencies)
+- [x] 5.4.4 Update environment variables table
+- [ ] 5.4.5 Add screenshots of UI indicator and history panel (optional, requires visual assets)
 
 ### Step 5.5: Final Testing
 - [ ] 5.5.1 Run full test suite on macOS
@@ -300,4 +300,4 @@ This plan implements two features in priority order:
 | Phase 2: Transcription History | Complete | JSONL-based storage, history panel UI, integrated with main app, history toggle hotkey (Cmd+H/Ctrl+H) |
 | Phase 3: Platform Abstraction | Complete | Platform factory with macOS/Windows/Linux implementations, 43 new tests |
 | Phase 4: Windows/Linux Support | Complete | All implementations done including xdotool/wtype fallback for Wayland (4.3.3), pending: VM testing (4.5) |
-| Phase 5: Polish | In Progress | Step 5.1 (Configuration) complete with 75+ tests; Step 5.2 (UI Refinements) complete with 29 new tests; Step 5.3 (Error Handling) complete with 38 new tests; remaining: documentation (5.4), final testing (5.5) |
+| Phase 5: Polish | In Progress | Step 5.1 (Configuration) complete with 75+ tests; Step 5.2 (UI Refinements) complete with 29 new tests; Step 5.3 (Error Handling) complete with 38 new tests; Step 5.4 (Documentation) complete with 87 tests; remaining: final testing (5.5) |
