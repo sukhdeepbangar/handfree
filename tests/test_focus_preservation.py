@@ -39,10 +39,10 @@ class TestIndicatorFocusPrevention:
         assert PYOBJC_AVAILABLE is False, "PYOBJC_AVAILABLE should be False on non-macOS"
 
     @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test")
-    def test_macos_sets_accessory_activation_policy(self):
-        """Test that macOS UI sets app activation policy to Accessory before creating windows."""
+    def test_macos_sets_background_activation_policy(self):
+        """Test that macOS UI sets app activation policy to Background before creating windows."""
         with patch('handfree.ui.app.tk.Tk') as mock_tk, \
-             patch('handfree.ui.app._set_macos_accessory_app') as mock_set_accessory:
+             patch('handfree.ui.app._set_macos_background_app') as mock_set_background:
             mock_root = MagicMock()
             mock_tk.return_value = mock_root
 
@@ -50,13 +50,13 @@ class TestIndicatorFocusPrevention:
             ui = HandFreeUI(history_enabled=False, menubar_enabled=False)
             ui.start()
 
-            # Should call _set_macos_accessory_app before creating Tk root
-            mock_set_accessory.assert_called_once()
+            # Should call _set_macos_background_app before creating Tk root
+            mock_set_background.assert_called_once()
             mock_tk.assert_called_once()
 
-            # Verify order: accessory policy set before Tk() created
-            # The mock call order shows accessory was called first
-            assert mock_set_accessory.call_count == 1
+            # Verify order: background policy set before Tk() created
+            # The mock call order shows background was called first
+            assert mock_set_background.call_count == 1
 
     def test_indicator_uses_overrideredirect(self):
         """Test indicator window uses overrideredirect to prevent focus."""

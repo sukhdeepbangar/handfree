@@ -36,6 +36,10 @@ from handfree.ui.indicator import RecordingIndicator
 # Native indicator disabled - causes trace trap crash
 # TODO: Investigate PyObjC NSPanel crash
 NATIVE_INDICATOR_AVAILABLE = False
+
+# Subprocess indicator for focus-preserving overlay (macOS only)
+SUBPROCESS_INDICATOR_AVAILABLE = sys.platform == "darwin"
+
 from handfree.ui.history import HistoryPanel
 from handfree.ui.menubar import create_menubar_app, MenuBarApp
 from handfree.storage.history_store import HistoryStore, TranscriptionRecord
@@ -71,6 +75,7 @@ class HandFreeUI:
         self._root: Optional[tk.Tk] = None
         self._indicator: Optional[RecordingIndicator] = None
         self._native_indicator = None  # NativeRecordingIndicator on macOS
+        self._subprocess_indicator = None  # Subprocess indicator for macOS
         self._history_panel: Optional[HistoryPanel] = None
         self._history_store: Optional[HistoryStore] = None
         self._menubar: Optional[MenuBarApp] = None
@@ -103,19 +108,24 @@ class HandFreeUI:
         self._root = tk.Tk()
         self._root.withdraw()  # Hide root window
 
-        # TEMPORARILY DISABLED: Indicator steals focus on macOS
-        # TODO: Find a way to show indicator without stealing focus
+        # TEMPORARILY DISABLED: Tkinter/Native indicators steal focus on macOS
+        # Instead, use subprocess indicator which runs in a separate process
+        # with NSApplicationActivationPolicyProhibited set before window creation
         self._native_indicator = None
         self._indicator = None
-        # if NATIVE_INDICATOR_AVAILABLE:
-        #     try:
-        #         self._native_indicator = NativeRecordingIndicator(position=self._indicator_position)
-        #         self._indicator = None  # Don't create tkinter indicator
-        #     except Exception as e:
-        #         print(f"[Warning] Native indicator failed, using tkinter: {e}")
-        #         self._indicator = RecordingIndicator(root=self._root, position=self._indicator_position)
-        # else:
-        #     self._indicator = RecordingIndicator(root=self._root, position=self._indicator_position)
+        self._subprocess_indicator = None
+
+        # Launch subprocess indicator on macOS (replaces disabled tkinter indicator)
+        if SUBPROCESS_INDICATOR_AVAILABLE:
+            try:
+                from handfree.ui.subprocess_indicator_client import SubprocessIndicator
+                self._subprocess_indicator = SubprocessIndicator()
+                if not self._subprocess_indicator.start():
+                    print("[Warning] Subprocess indicator failed to start")
+                    self._subprocess_indicator = None
+            except Exception as e:
+                print(f"[Warning] Subprocess indicator unavailable: {e}")
+                self._subprocess_indicator = None
 
         # Create history components if enabled
         if self._history_enabled:
@@ -173,8 +183,14 @@ class HandFreeUI:
         if not self._running:
             return
 
+        # Forward state to subprocess indicator (focus-preserving)
+        if self._subprocess_indicator:
+            try:
+                self._subprocess_indicator.set_state(state)
+            except Exception:
+                pass
         # Use native indicator if available (direct call, no thread scheduling needed)
-        if self._native_indicator:
+        elif self._native_indicator:
             try:
                 self._native_indicator.set_state(state)
             except Exception:
@@ -263,6 +279,14 @@ class HandFreeUI:
             return
 
         self._running = False
+
+        # Stop subprocess indicator first (clean shutdown)
+        if self._subprocess_indicator:
+            try:
+                self._subprocess_indicator.stop()
+            except Exception:
+                pass
+            self._subprocess_indicator = None
 
         # Stop native indicator if using it
         if self._native_indicator:
