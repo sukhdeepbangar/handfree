@@ -58,11 +58,11 @@ This document provides a detailed step-by-step guide to add local transcription 
 - [x] 5.5 Verify: Model download works correctly
 
 ### Phase 6: Documentation & Testing
-- [ ] 6.1 Update README.md with local transcription setup
-- [ ] 6.2 Add troubleshooting for common issues
+- [x] 6.1 Update README.md with local transcription setup
+- [x] 6.2 Add troubleshooting for common issues
 - [x] 6.3 Create performance comparison tests
-- [ ] 6.4 Document model selection guidance
-- [ ] 6.5 Final end-to-end testing
+- [x] 6.4 Document model selection guidance
+- [x] 6.5 Final end-to-end testing
 
 ---
 

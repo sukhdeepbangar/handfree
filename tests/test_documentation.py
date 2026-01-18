@@ -649,3 +649,141 @@ class TestTkinterDocumentation:
     def test_mentions_python3_tk_package(self, readme_content):
         """README should mention python3-tk package for Linux."""
         assert "python3-tk" in readme_content, "Should mention python3-tk package"
+
+
+class TestLocalTranscriptionDocumentation:
+    """Tests for local transcription (whisper.cpp) documentation."""
+
+    @pytest.fixture
+    def readme_content(self):
+        """Load README content."""
+        readme_path = PROJECT_ROOT / "README.md"
+        return readme_path.read_text()
+
+    def test_has_local_transcription_section(self, readme_content):
+        """README should have a Local Transcription section."""
+        assert "## Local Transcription" in readme_content or \
+               "Local Transcription (whisper.cpp)" in readme_content, \
+            "Missing Local Transcription section"
+
+    def test_mentions_whisper_cpp(self, readme_content):
+        """README should mention whisper.cpp."""
+        assert "whisper.cpp" in readme_content, "Should mention whisper.cpp"
+
+    def test_mentions_pywhispercpp(self, readme_content):
+        """README should mention pywhispercpp package."""
+        assert "pywhispercpp" in readme_content, "Should mention pywhispercpp"
+
+    def test_mentions_model_download_command(self, readme_content):
+        """README should mention how to download models."""
+        assert "model_manager" in readme_content, "Should mention model_manager command"
+        assert "download" in readme_content, "Should mention download command"
+
+    def test_documents_available_models(self, readme_content):
+        """README should document available model options."""
+        assert "tiny.en" in readme_content, "Should mention tiny.en model"
+        assert "base.en" in readme_content, "Should mention base.en model"
+        assert "small.en" in readme_content, "Should mention small.en model"
+
+    def test_documents_model_sizes(self, readme_content):
+        """README should document model sizes."""
+        assert "75 MB" in readme_content or "75MB" in readme_content, \
+            "Should mention tiny model size"
+        assert "142 MB" in readme_content or "142MB" in readme_content, \
+            "Should mention base model size"
+
+    def test_documents_transcriber_env_var(self, readme_content):
+        """README should document HANDFREE_TRANSCRIBER env var."""
+        assert "HANDFREE_TRANSCRIBER" in readme_content, \
+            "Should document HANDFREE_TRANSCRIBER"
+
+    def test_documents_whisper_model_env_var(self, readme_content):
+        """README should document HANDFREE_WHISPER_MODEL env var."""
+        assert "HANDFREE_WHISPER_MODEL" in readme_content, \
+            "Should document HANDFREE_WHISPER_MODEL"
+
+    def test_documents_models_dir_env_var(self, readme_content):
+        """README should document HANDFREE_MODELS_DIR env var."""
+        assert "HANDFREE_MODELS_DIR" in readme_content, \
+            "Should document HANDFREE_MODELS_DIR"
+
+    def test_mentions_offline_capability(self, readme_content):
+        """README should mention offline capability."""
+        content_lower = readme_content.lower()
+        assert "offline" in content_lower, "Should mention offline capability"
+
+    def test_mentions_privacy_benefit(self, readme_content):
+        """README should mention privacy benefits."""
+        content_lower = readme_content.lower()
+        assert "private" in content_lower or "privacy" in content_lower, \
+            "Should mention privacy benefits"
+
+    def test_has_model_comparison_table(self, readme_content):
+        """README should have a model comparison table."""
+        assert "| Model |" in readme_content or "| `tiny.en` |" in readme_content, \
+            "Should have model comparison table"
+
+    def test_mentions_local_vs_cloud_comparison(self, readme_content):
+        """README should compare local vs cloud transcription."""
+        assert "Cloud" in readme_content and "Local" in readme_content, \
+            "Should compare cloud and local options"
+
+
+class TestLocalTranscriptionTroubleshooting:
+    """Tests for local transcription troubleshooting documentation."""
+
+    @pytest.fixture
+    def readme_content(self):
+        """Load README content."""
+        readme_path = PROJECT_ROOT / "README.md"
+        return readme_path.read_text()
+
+    def test_troubleshooting_model_not_found(self, readme_content):
+        """README should address model not found error."""
+        content_lower = readme_content.lower()
+        assert "model not found" in content_lower or "failed to load" in content_lower, \
+            "Should address model not found error"
+
+    def test_troubleshooting_slow_transcription(self, readme_content):
+        """README should address slow transcription."""
+        content_lower = readme_content.lower()
+        assert "slow" in content_lower, "Should address slow transcription"
+
+    def test_troubleshooting_memory_usage(self, readme_content):
+        """README should address memory usage issues."""
+        content_lower = readme_content.lower()
+        assert "memory" in content_lower or "ram" in content_lower, \
+            "Should address memory usage"
+
+    def test_troubleshooting_quality_issues(self, readme_content):
+        """README should address transcription quality issues."""
+        content_lower = readme_content.lower()
+        assert "quality" in content_lower, "Should address quality issues"
+
+
+class TestLocalTranscriberFileExists:
+    """Tests that local_transcriber.py exists and is documented."""
+
+    def test_local_transcriber_exists(self):
+        """local_transcriber.py should exist."""
+        local_transcriber_path = PROJECT_ROOT / "src" / "handfree" / "local_transcriber.py"
+        assert local_transcriber_path.exists(), "local_transcriber.py not found"
+
+    def test_model_manager_exists(self):
+        """model_manager.py should exist."""
+        model_manager_path = PROJECT_ROOT / "src" / "handfree" / "model_manager.py"
+        assert model_manager_path.exists(), "model_manager.py not found"
+
+    def test_local_transcriber_documented_in_readme(self):
+        """local_transcriber.py should be mentioned in README."""
+        readme_path = PROJECT_ROOT / "README.md"
+        readme_content = readme_path.read_text()
+        assert "local_transcriber" in readme_content, \
+            "local_transcriber.py should be documented in README"
+
+    def test_model_manager_documented_in_readme(self):
+        """model_manager.py should be mentioned in README."""
+        readme_path = PROJECT_ROOT / "README.md"
+        readme_content = readme_path.read_text()
+        assert "model_manager" in readme_content, \
+            "model_manager.py should be documented in README"

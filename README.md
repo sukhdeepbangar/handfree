@@ -19,7 +19,8 @@ Cross-platform speech-to-text application. Hold a hotkey to record, release to t
 
 ### All Platforms
 - **Python 3.10 or later**
-- **Groq API key** - Free tier available at [console.groq.com](https://console.groq.com)
+- **Groq API key** (for cloud transcription) - Free tier available at [console.groq.com](https://console.groq.com)
+- **OR** whisper.cpp models (for local transcription) - No API key needed
 
 ### macOS
 - **macOS 14 (Sonoma) or later**
@@ -163,11 +164,74 @@ Press **Cmd+H** (macOS) or **Ctrl+H** (Windows/Linux) to toggle the history pane
 - Entries persist across application restarts
 - Maximum 1000 entries stored (oldest are deleted automatically)
 
+## Local Transcription (whisper.cpp)
+
+For offline, private transcription, you can use whisper.cpp instead of the Groq cloud API.
+
+### Benefits
+
+| Feature | Cloud (Groq) | Local (whisper.cpp) |
+|---------|--------------|---------------------|
+| Privacy | Audio sent to cloud | Audio stays local |
+| Offline | Requires internet | Works offline |
+| Cost | Free tier (limited) | Completely free |
+| Latency | ~200ms + network | ~200ms (base model) |
+| Setup | API key only | Model download (~142MB) |
+
+### Setup
+
+1. **Install pywhispercpp** (included in requirements):
+   ```bash
+   pip install pywhispercpp
+   ```
+
+2. **Download a model**:
+   ```bash
+   python -m handfree.model_manager download base.en
+   ```
+
+3. **Enable local transcription**:
+   ```bash
+   # Add to your .env file
+   HANDFREE_TRANSCRIBER=local
+   ```
+
+### Model Selection Guide
+
+| Model | Size | Speed | Quality | Recommended For |
+|-------|------|-------|---------|-----------------|
+| `tiny.en` | 75 MB | Fastest | Basic | Quick testing |
+| `base.en` | 142 MB | Fast | Good | **General use (recommended)** |
+| `small.en` | 466 MB | Medium | Better | Higher accuracy needs |
+| `medium.en` | 1.5 GB | Slow | Great | Best accuracy (high-end hardware) |
+| `large-v3` | 3 GB | Slowest | Best | Maximum quality, multilingual |
+
+**Note:** Models ending in `.en` are English-only but faster. Models without `.en` support multiple languages.
+
+### Model Management Commands
+
+```bash
+# List all available models and download status
+python -m handfree.model_manager list
+
+# Download a specific model
+python -m handfree.model_manager download base.en
+
+# Show detailed model info
+python -m handfree.model_manager info base.en
+
+# Force re-download a model
+python -m handfree.model_manager download base.en --force
+```
+
 ## Environment Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GROQ_API_KEY` | Yes | - | Your Groq API key |
+| `GROQ_API_KEY` | Conditional* | - | Groq API key (required when `HANDFREE_TRANSCRIBER=groq`) |
+| `HANDFREE_TRANSCRIBER` | No | `groq` | Transcription backend: `groq` (cloud) or `local` (whisper.cpp) |
+| `HANDFREE_WHISPER_MODEL` | No | `base.en` | Whisper model for local transcription |
+| `HANDFREE_MODELS_DIR` | No | `~/.cache/whisper` | Directory for whisper model files |
 | `HANDFREE_LANGUAGE` | No | auto | Language code (e.g., "en", "es", "fr") |
 | `HANDFREE_TYPE_DELAY` | No | 0 | Delay between keystrokes in seconds |
 | `HANDFREE_SAMPLE_RATE` | No | 16000 | Audio sample rate in Hz |
@@ -378,6 +442,57 @@ export GROQ_API_KEY=your_key_here
    - Ubuntu/Debian: `sudo apt install python3-tk`
    - Fedora: `sudo dnf install python3-tkinter`
 
+### Local Transcription Troubleshooting
+
+#### "Model not found" or "Failed to load whisper model" error
+
+**Solution**: Download the model first:
+```bash
+python -m handfree.model_manager download base.en
+```
+
+#### Slow local transcription
+
+**Possible causes:**
+- Using a large model on limited hardware
+- Metal GPU acceleration not working (macOS)
+
+**Solutions:**
+1. Use a smaller model:
+   ```bash
+   export HANDFREE_WHISPER_MODEL=tiny.en
+   ```
+2. Check that Metal acceleration is enabled (macOS Apple Silicon)
+3. Ensure sufficient RAM is available (base model needs ~2GB)
+
+#### High memory usage with local transcription
+
+**Cause:** Larger models require more RAM.
+
+**Solutions:**
+1. Use smaller models: `tiny` (~1GB), `base` (~2GB), `small` (~3GB)
+2. Restart the app to unload the model from memory
+3. Set a smaller model: `HANDFREE_WHISPER_MODEL=tiny.en`
+
+#### Local transcription quality issues
+
+**Possible causes:**
+- Using a smaller model
+- Audio quality issues
+- Speaking non-English with English-only model
+
+**Solutions:**
+1. Try a larger model: `export HANDFREE_WHISPER_MODEL=small.en`
+2. Ensure clear audio input with minimal background noise
+3. For non-English, use multilingual models (without `.en` suffix): `base`, `small`, `medium`, `large-v3`
+
+#### "pywhispercpp not installed" error
+
+**Solution**: Install the pywhispercpp package:
+```bash
+pip install pywhispercpp
+```
+
 ## Development
 
 ### Running Tests
@@ -407,7 +522,9 @@ handfree/
 ├── src/handfree/
 │   ├── __init__.py
 │   ├── audio_recorder.py       # Microphone audio capture
-│   ├── transcriber.py          # Groq Whisper API client
+│   ├── transcriber.py          # Groq Whisper API client (cloud)
+│   ├── local_transcriber.py    # whisper.cpp transcription (local)
+│   ├── model_manager.py        # Model download/management CLI
 │   ├── config.py               # Configuration loading
 │   ├── exceptions.py           # Custom exceptions
 │   ├── platform/               # Platform abstraction layer
@@ -447,7 +564,9 @@ handfree/
 
 2. **Audio Recording** (`audio_recorder.py`): Captures audio from the microphone using `sounddevice` library, storing in memory as 16-bit mono WAV at 16kHz
 
-3. **Transcription** (`transcriber.py`): Sends audio to Groq's Whisper API (`whisper-large-v3-turbo` model) for fast, accurate transcription
+3. **Transcription**: Converts audio to text using one of two backends:
+   - **Cloud** (`transcriber.py`): Groq Whisper API (`whisper-large-v3-turbo`) - fast, accurate, requires internet
+   - **Local** (`local_transcriber.py`): whisper.cpp - private, offline, no API costs
 
 4. **Output**: Platform-specific text typing
    - macOS: AppleScript for reliable keystroke injection
@@ -465,3 +584,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 - [Groq](https://groq.com) for lightning-fast Whisper API
 - [OpenAI Whisper](https://github.com/openai/whisper) for the speech recognition model
+- [whisper.cpp](https://github.com/ggerganov/whisper.cpp) for efficient local transcription
