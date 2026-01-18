@@ -189,7 +189,7 @@ This plan implements two features in priority order:
 ### Step 4.3: Linux Implementation
 - [x] 4.3.1 Create `platform/linux/hotkey_detector.py` (similar to Windows)
 - [x] 4.3.2 Create `platform/linux/output_handler.py` (similar to Windows)
-- [ ] 4.3.3 Add xdotool fallback for typing if pynput fails on Wayland
+- [x] 4.3.3 Add xdotool/wtype fallback for typing if pynput fails on Wayland (37 new tests)
 
 ### Step 4.4: Update Dependencies
 - [x] 4.4.1 Update `pyproject.toml`:
@@ -299,5 +299,5 @@ This plan implements two features in priority order:
 | Phase 1: Recording Indicator | Complete | UI indicator with states (idle, recording, transcribing, success, error) |
 | Phase 2: Transcription History | Complete | JSONL-based storage, history panel UI, integrated with main app |
 | Phase 3: Platform Abstraction | Complete | Platform factory with macOS/Windows/Linux implementations, 43 new tests |
-| Phase 4: Windows/Linux Support | Complete | Implementations done, dependencies updated (4.4), pending: xdotool fallback (4.3.3), VM testing (4.5) |
+| Phase 4: Windows/Linux Support | Complete | All implementations done including xdotool/wtype fallback for Wayland (4.3.3), pending: VM testing (4.5) |
 | Phase 5: Polish | In Progress | Step 5.1 (Configuration) complete with 75+ tests; Step 5.2 (UI Refinements) complete with 29 new tests; Step 5.3 (Error Handling) complete with 38 new tests; remaining: documentation (5.4), final testing (5.5) |
