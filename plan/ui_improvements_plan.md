@@ -703,6 +703,88 @@ pytest tests/ -v
 
 ---
 
+## Phase 6: Preserve Focus During Recording
+
+### Step 6.1: Investigate current focus behavior
+
+**Tasks:**
+- [ ] Test which component is stealing focus (indicator window vs hotkey detector)
+- [ ] Add debug logging to track focus changes
+- [ ] Identify the exact moment when focus is lost
+
+### Step 6.2: Configure indicator window to not take focus
+
+**File:** `src/handfree/ui/indicator.py`
+
+**Tasks:**
+- [ ] Ensure `overrideredirect(True)` is set on the window
+- [ ] Add `-topmost` attribute without activation
+- [ ] Set `focusmodel` to prevent focus stealing
+- [ ] Consider using `wm_attributes('-type', 'splash')` on Linux
+
+**Potential code changes:**
+```python
+# In _create_window() or similar
+self.window.overrideredirect(True)
+self.window.attributes('-topmost', True)
+# Prevent window from taking focus
+self.window.wm_attributes('-focusmodel', 'passive')
+# On macOS, prevent activation
+if sys.platform == 'darwin':
+    self.window.wm_attributes('-modified', False)
+```
+
+### Step 6.3: Verify Quartz event tap configuration
+
+**File:** `src/handfree/platform/macos/hotkey_detector.py`
+
+**Tasks:**
+- [ ] Verify event tap uses `kCGEventTapOptionListenOnly` (not default)
+- [ ] Ensure events are not being consumed/modified
+- [ ] Check if `kCGHeadInsertEventTap` is causing issues
+
+**Key check:**
+```python
+# Ensure this is a passive listener, not an active interceptor
+tap = Quartz.CGEventTapCreate(
+    Quartz.kCGSessionEventTap,
+    Quartz.kCGHeadInsertEventTap,
+    Quartz.kCGEventTapOptionListenOnly,  # <-- Must be ListenOnly
+    event_mask,
+    callback,
+    None
+)
+```
+
+### Step 6.4: Test focus preservation
+
+**Verification:**
+- [ ] Open TextEdit with cursor in document
+- [ ] Press Fn to start recording
+- [ ] Verify cursor stays in TextEdit (not moved)
+- [ ] Verify indicator appears
+- [ ] Release Fn
+- [ ] Verify transcript appears at cursor position
+
+**Test in multiple apps:**
+- [ ] Terminal
+- [ ] VS Code
+- [ ] Browser (Chrome/Safari text field)
+- [ ] Notes app
+- [ ] Slack/Discord message input
+
+### Step 6.5: Alternative approach if tkinter focus issues persist
+
+**Option A: Use a different indicator mechanism**
+- [ ] Consider using NSWindow directly via PyObjC
+- [ ] Create a non-activating overlay window
+
+**Option B: Use menu bar indicator only**
+- [ ] Rely on menu bar icon color change
+- [ ] Remove floating indicator entirely
+
+---
+
 ## Rollback Plan
 
 If issues arise:
@@ -712,3 +794,4 @@ If issues arise:
 3. **Hotkey:** Change back to `CMD_FLAG` only (remove `SHIFT_FLAG`)
 4. **Indicator:** Remove bar animation code, restore `STATE_CONFIG` usage
 5. **Menu Bar:** Remove menubar.py, remove integration from app.py/main.py
+6. **Focus Preservation:** Revert any window attribute changes, restore original indicator behavior

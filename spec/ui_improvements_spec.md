@@ -8,13 +8,14 @@
 
 ## 1. Overview
 
-This specification defines five UI/UX improvements for HandFree on macOS:
+This specification defines six UI/UX improvements for HandFree on macOS:
 
 1. Remove duplicate system notifications during recording
 2. Replace static "REC" indicator with animated audio visualizer bars
 3. Change history hotkey from Cmd+H to Cmd+Shift+H
 4. Add persistent menu bar icon for app visibility and control
 5. Fix text output to use one-shot paste without polluting clipboard
+6. Preserve focus during recording (Fn key should not steal focus from text areas)
 
 ---
 
@@ -167,6 +168,38 @@ This specification defines five UI/UX improvements for HandFree on macOS:
 - [ ] Clipboard contains original content after transcription
 - [ ] Works in all text input fields
 - [ ] Handles empty original clipboard gracefully
+
+---
+
+### 2.6 Preserve Focus During Recording
+
+**Current Behavior:**
+- When holding the Fn key to start recording, focus is stolen from the active text area
+- This causes the transcript to be lost or pasted in the wrong location
+- User has to click back into the text field after recording
+
+**Required Behavior:**
+- Holding the Fn key should NOT steal focus from any application
+- The recording indicator should appear without taking focus
+- Focus should remain on whatever text area the user was typing in
+- When recording ends, the transcribed text should appear at the original cursor position
+
+**Root Cause (Investigation Needed):**
+- The tkinter indicator window may be taking focus when shown
+- The hotkey detection mechanism may be interrupting the active application
+
+**Possible Solutions:**
+1. Set indicator window to not take focus (`-topmost` without activation)
+2. Use `overrideredirect(True)` to prevent window manager focus
+3. Ensure Quartz event tap doesn't modify event flow
+4. Use a lower-level display method that doesn't create a focusable window
+
+**Acceptance Criteria:**
+- [ ] Focus remains in text area when Fn key is pressed
+- [ ] Recording indicator appears without stealing focus
+- [ ] Cursor position is preserved during recording
+- [ ] Transcribed text appears at correct cursor location
+- [ ] Works in Terminal, TextEdit, VS Code, browser text fields
 
 ---
 
