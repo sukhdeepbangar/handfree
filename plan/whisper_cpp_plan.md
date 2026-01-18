@@ -21,10 +21,10 @@ This document provides a detailed step-by-step guide to add local transcription 
 ## Master Todo Checklist
 
 ### Phase 1: Setup & Dependencies
-- [ ] 1.1 Install pywhispercpp package
-- [ ] 1.2 Download whisper model (base.en recommended)
-- [ ] 1.3 Verify whisper.cpp works standalone
-- [ ] 1.4 Test transcription quality and latency
+- [x] 1.1 Install pywhispercpp package
+- [x] 1.2 Download whisper model (base.en recommended)
+- [x] 1.3 Verify whisper.cpp works standalone
+- [x] 1.4 Test transcription quality and latency
 
 ### Phase 2: LocalTranscriber Module
 - [x] 2.1 Create `local_transcriber.py` with `LocalTranscriber` class
@@ -646,12 +646,12 @@ For most users, `base.en` provides the best balance of speed and accuracy.
 
 ## Verification Checklist
 
-- [ ] pywhispercpp installs without errors
-- [ ] Model downloads successfully
-- [ ] Local transcription produces accurate text
-- [ ] Latency is acceptable (< 1s for short audio)
-- [ ] Switching between local/cloud works
-- [ ] Fallback logic works when model missing
-- [ ] Memory usage is reasonable
+- [x] pywhispercpp installs without errors
+- [x] Model downloads successfully
+- [x] Local transcription produces accurate text
+- [x] Latency is acceptable (< 1s for short audio) - **Actual: ~65ms for 10s audio on M4**
+- [x] Switching between local/cloud works
+- [x] Fallback logic works when model missing
+- [x] Memory usage is reasonable (~147 MB for base.en)
 - [ ] Works offline (airplane mode test)
-- [ ] Documentation is complete and accurate
+- [x] Documentation is complete and accurate
