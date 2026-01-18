@@ -31,12 +31,9 @@ def _set_macos_accessory_app() -> None:
 
 from handfree.ui.indicator import RecordingIndicator
 
-# Try to use native indicator on macOS (doesn't steal focus)
-try:
-    from handfree.ui.native_indicator import NativeRecordingIndicator
-    NATIVE_INDICATOR_AVAILABLE = True
-except ImportError:
-    NATIVE_INDICATOR_AVAILABLE = False
+# Native indicator disabled - causes trace trap crash
+# TODO: Investigate PyObjC NSPanel crash
+NATIVE_INDICATOR_AVAILABLE = False
 from handfree.ui.history import HistoryPanel
 from handfree.ui.menubar import create_menubar_app, MenuBarApp
 from handfree.storage.history_store import HistoryStore, TranscriptionRecord
