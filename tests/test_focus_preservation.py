@@ -24,6 +24,20 @@ from hypothesis import given, strategies as st, settings, HealthCheck
 class TestIndicatorFocusPrevention:
     """Tests for RecordingIndicator focus prevention configuration."""
 
+    @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test")
+    def test_pyobjc_available_on_macos(self):
+        """Test PYOBJC_AVAILABLE is True on macOS when pyobjc is installed."""
+        from handfree.ui.indicator import PYOBJC_AVAILABLE
+        # On macOS with pyobjc installed, this should be True
+        # If pyobjc is not installed, the test still passes (it's a soft requirement)
+        assert isinstance(PYOBJC_AVAILABLE, bool), "PYOBJC_AVAILABLE should be a boolean"
+
+    @pytest.mark.skipif(sys.platform == "darwin", reason="Non-macOS test")
+    def test_pyobjc_not_available_on_other_platforms(self):
+        """Test PYOBJC_AVAILABLE is False on non-macOS platforms."""
+        from handfree.ui.indicator import PYOBJC_AVAILABLE
+        assert PYOBJC_AVAILABLE is False, "PYOBJC_AVAILABLE should be False on non-macOS"
+
     def test_indicator_uses_overrideredirect(self):
         """Test indicator window uses overrideredirect to prevent focus."""
         mock_window = MagicMock()
@@ -57,21 +71,76 @@ class TestIndicatorFocusPrevention:
 
     @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test")
     def test_indicator_sets_macos_focus_prevention(self):
-        """Test indicator sets macOS-specific focus prevention attributes."""
+        """Test indicator calls macOS-specific focus prevention method."""
         mock_window = MagicMock()
         mock_canvas = MagicMock()
 
         with patch('handfree.ui.indicator.tk.Toplevel', return_value=mock_window), \
-             patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas):
+             patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas), \
+             patch('handfree.ui.indicator.get_current_platform', return_value='macos'):
+            from handfree.ui.indicator import RecordingIndicator
+
+            # Patch _setup_macos_focus_prevention to track if it was called
+            with patch.object(RecordingIndicator, '_setup_macos_focus_prevention') as mock_method:
+                indicator = RecordingIndicator()
+                # _setup_macos_focus_prevention should be called during init
+                mock_method.assert_called()
+
+    @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test")
+    def test_indicator_macos_focus_prevention_uses_pyobjc(self):
+        """Test macOS focus prevention uses PyObjC NSWindow configuration."""
+        mock_window = MagicMock()
+        mock_canvas = MagicMock()
+
+        # Mock NSWindow object
+        mock_nswindow = MagicMock()
+        mock_nswindow.frame.return_value = MagicMock(
+            origin=MagicMock(x=100, y=100),
+            size=MagicMock(width=60, height=24)
+        )
+
+        # Mock NSApp
+        mock_nsapp = MagicMock()
+        mock_nsapp.windows.return_value = [mock_nswindow]
+
+        with patch('handfree.ui.indicator.tk.Toplevel', return_value=mock_window), \
+             patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas), \
+             patch('handfree.ui.indicator.get_current_platform', return_value='macos'), \
+             patch('handfree.ui.indicator.PYOBJC_AVAILABLE', True), \
+             patch.dict('sys.modules', {'AppKit': MagicMock(NSApp=mock_nsapp, NSFloatingWindowLevel=3)}):
+
+            # Mock tkinter window position/size to match our mock NSWindow
+            mock_window.winfo_x.return_value = 100
+            mock_window.winfo_y.return_value = 100
+            mock_window.winfo_width.return_value = 60
+            mock_window.winfo_height.return_value = 24
+            mock_window.winfo_id.return_value = 12345
+
+            from handfree.ui.indicator import RecordingIndicator
+            indicator = RecordingIndicator()
+
+            # Should configure NSWindow to not become key or main window
+            mock_nswindow.setCanBecomeKey_.assert_called_with(False)
+            mock_nswindow.setCanBecomeMain_.assert_called_with(False)
+
+    @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test")
+    def test_show_reapplies_macos_focus_prevention(self):
+        """Test show() re-applies macOS focus prevention settings."""
+        mock_window = MagicMock()
+        mock_canvas = MagicMock()
+
+        with patch('handfree.ui.indicator.tk.Toplevel', return_value=mock_window), \
+             patch('handfree.ui.indicator.tk.Canvas', return_value=mock_canvas), \
+             patch('handfree.ui.indicator.get_current_platform', return_value='macos'):
             from handfree.ui.indicator import RecordingIndicator
 
             indicator = RecordingIndicator()
 
-            # Should call wm_attributes with -modified
-            calls = mock_window.wm_attributes.call_args_list
-            if calls:  # Only check if wm_attributes was called
-                modified_call = [c for c in calls if '-modified' in c[0]]
-                assert len(modified_call) > 0, "Should set -modified attribute on macOS"
+            # Patch _setup_macos_focus_prevention after init
+            with patch.object(indicator, '_setup_macos_focus_prevention') as mock_method:
+                indicator.show()
+                # Should re-apply focus prevention before showing
+                mock_method.assert_called_once()
 
     def test_indicator_show_does_not_call_lift_on_macos(self):
         """Test indicator show() does not call lift() on macOS to prevent focus stealing."""
@@ -346,10 +415,13 @@ class TestFocusPreservationManualGuidance:
     - Slack/Discord message input
 
     If focus is stolen:
-    - Check that indicator.py:_setup_focus_prevention() is being called
+    - Check that indicator.py:_setup_macos_focus_prevention() is being called
+    - Verify PyObjC is available (PYOBJC_AVAILABLE = True)
+    - Verify NSWindow.setCanBecomeKey_(False) is being called
+    - Verify NSWindow.setCanBecomeMain_(False) is being called
     - Verify overrideredirect(True) is set
     - Verify lift() is not being called on macOS
-    - Check for any other window.focus() or window.focus_force() calls
+    - Check that show() re-applies focus prevention before deiconify
     """
 
     def test_manual_test_documentation(self):

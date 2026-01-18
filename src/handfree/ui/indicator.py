@@ -9,6 +9,16 @@ import sys
 import tkinter as tk
 from typing import Optional, List
 
+# PyObjC imports for macOS focus prevention
+if sys.platform == "darwin":
+    try:
+        from AppKit import NSFloatingWindowLevel
+        PYOBJC_AVAILABLE = True
+    except ImportError:
+        PYOBJC_AVAILABLE = False
+else:
+    PYOBJC_AVAILABLE = False
+
 
 # Valid position values
 VALID_POSITIONS = ["top-center", "top-right", "top-left", "bottom-center", "bottom-right", "bottom-left"]
@@ -133,12 +143,7 @@ class RecordingIndicator:
         """Configure platform-specific settings to prevent stealing focus."""
         try:
             if self._platform == "macos":
-                # macOS: Prevent window activation on show
-                # The window will appear but won't steal keyboard focus
-                self.window.wm_attributes('-modified', 0)
-                # Additional: set the window to not be activatable
-                # Note: This requires the window to be overrideredirect(True)
-                # which we already set in __init__
+                self._setup_macos_focus_prevention()
             elif self._platform == "linux":
                 # Linux: Set window type to prevent focus
                 # This works with most window managers
@@ -151,8 +156,80 @@ class RecordingIndicator:
                     except tk.TclError:
                         pass
             # Windows: overrideredirect(True) is usually sufficient
-        except tk.TclError:
+        except Exception:
             # If focus prevention fails, continue anyway
+            pass
+
+    def _setup_macos_focus_prevention(self) -> None:
+        """Configure macOS-specific window properties to prevent focus stealing.
+
+        Uses PyObjC to access the underlying NSWindow and configure it to not
+        take keyboard focus when shown.
+        """
+        if not PYOBJC_AVAILABLE:
+            return
+
+        try:
+            # Force window to be created and mapped first
+            self.window.update_idletasks()
+
+            # On macOS, we need to find the NSWindow for our tkinter window.
+            # The window ID from tkinter is a CGWindowID, not a pointer.
+            # We use NSApp to iterate through windows to find ours.
+            try:
+                from AppKit import NSApp
+
+                # Get the tkinter window's screen position to identify it
+                self.window.update()
+                tk_x = self.window.winfo_x()
+                tk_y = self.window.winfo_y()
+                tk_width = self.window.winfo_width()
+                tk_height = self.window.winfo_height()
+
+                # Find the matching NSWindow
+                nswindow = None
+                for win in NSApp.windows():
+                    frame = win.frame()
+                    # Match by approximate position and size
+                    # Note: Y coordinate is flipped in Cocoa (origin at bottom-left)
+                    if (abs(frame.origin.x - tk_x) < 5 and
+                        abs(frame.size.width - tk_width) < 5 and
+                        abs(frame.size.height - tk_height) < 5):
+                        nswindow = win
+                        break
+
+                if nswindow is None:
+                    return
+
+            except Exception:
+                return
+
+            # Prevent window from becoming key window (no keyboard focus)
+            if hasattr(nswindow, 'setCanBecomeKey_'):
+                nswindow.setCanBecomeKey_(False)
+
+            # Prevent window from becoming main window
+            if hasattr(nswindow, 'setCanBecomeMain_'):
+                nswindow.setCanBecomeMain_(False)
+
+            # Set window level to floating (above normal windows)
+            if hasattr(nswindow, 'setLevel_'):
+                nswindow.setLevel_(NSFloatingWindowLevel)
+
+            # Prevent window from hiding on deactivate
+            if hasattr(nswindow, 'setHidesOnDeactivate_'):
+                nswindow.setHidesOnDeactivate_(False)
+
+            # Set collection behavior to join all spaces and not be part of window cycling
+            if hasattr(nswindow, 'setCollectionBehavior_'):
+                # NSWindowCollectionBehaviorCanJoinAllSpaces = 1 << 0
+                # NSWindowCollectionBehaviorStationary = 1 << 4
+                # NSWindowCollectionBehaviorIgnoresCycle = 1 << 6
+                behavior = (1 << 0) | (1 << 4) | (1 << 6)
+                nswindow.setCollectionBehavior_(behavior)
+
+        except Exception:
+            # Silently fail - focus prevention is best-effort
             pass
 
     def _setup_transparency(self) -> None:
@@ -464,7 +541,12 @@ class RecordingIndicator:
 
     def show(self) -> None:
         """Show the indicator window without stealing focus."""
+        # Re-apply focus prevention before showing (settings may reset after withdraw)
+        if self._platform == "macos":
+            self._setup_macos_focus_prevention()
+
         self.window.deiconify()
+
         # Don't call lift() on macOS as it can steal focus from the active text field
         # The -topmost attribute ensures the window stays on top without needing lift()
         if self._platform != "macos":
