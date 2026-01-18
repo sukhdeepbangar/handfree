@@ -126,7 +126,7 @@ class TestMacOSHotkeyDetectorDescriptions(unittest.TestCase):
 
         detector = MacOSHotkeyDetector(lambda: None, lambda: None)
 
-        self.assertEqual(detector.get_history_toggle_description(), "Cmd+H")
+        self.assertEqual(detector.get_history_toggle_description(), "Cmd+Shift+H")
 
 
 class TestMacOSHotkeyDetectorEventCallback(unittest.TestCase):
@@ -232,25 +232,42 @@ class TestMacOSHotkeyDetectorEventCallback(unittest.TestCase):
 
 
 class TestMacOSHotkeyDetectorHistoryToggle(unittest.TestCase):
-    """Tests for history toggle hotkey (Cmd+H)."""
+    """Tests for history toggle hotkey (Cmd+Shift+H)."""
 
     @patch('handfree.platform.macos.hotkey_detector.Quartz', MockQuartz)
     @patch('handfree.platform.macos.hotkey_detector.CGEventTapCreate')
     @patch('handfree.platform.macos.hotkey_detector.CGEventGetFlags')
-    def test_cmd_h_triggers_history_toggle(self, mock_get_flags, mock_tap_create):
-        """Test Cmd+H triggers history toggle."""
+    def test_cmd_shift_h_triggers_history_toggle(self, mock_get_flags, mock_tap_create):
+        """Test Cmd+Shift+H triggers history toggle."""
         from handfree.platform.macos.hotkey_detector import MacOSHotkeyDetector, kCGEventKeyDown
 
         on_history = MagicMock()
         detector = MacOSHotkeyDetector(lambda: None, lambda: None, on_history)
 
-        # Create event with H keycode and Cmd flag pressed
+        # Create event with H keycode and Cmd+Shift flags pressed
         event = MockCGEvent(keycode=H_KEYCODE)
-        mock_get_flags.return_value = CMD_FLAG  # Cmd is pressed
+        mock_get_flags.return_value = CMD_FLAG | 0x20000  # Cmd+Shift pressed
 
         detector._event_callback(None, kCGEventKeyDown, event, None)
 
         on_history.assert_called_once()
+
+    @patch('handfree.platform.macos.hotkey_detector.Quartz', MockQuartz)
+    @patch('handfree.platform.macos.hotkey_detector.CGEventTapCreate')
+    @patch('handfree.platform.macos.hotkey_detector.CGEventGetFlags')
+    def test_cmd_h_without_shift_does_not_trigger(self, mock_get_flags, mock_tap_create):
+        """Test Cmd+H without Shift does not trigger history toggle."""
+        from handfree.platform.macos.hotkey_detector import MacOSHotkeyDetector, kCGEventKeyDown
+
+        on_history = MagicMock()
+        detector = MacOSHotkeyDetector(lambda: None, lambda: None, on_history)
+
+        event = MockCGEvent(keycode=H_KEYCODE)
+        mock_get_flags.return_value = CMD_FLAG  # Only Cmd, no Shift
+
+        detector._event_callback(None, kCGEventKeyDown, event, None)
+
+        on_history.assert_not_called()
 
     @patch('handfree.platform.macos.hotkey_detector.Quartz', MockQuartz)
     @patch('handfree.platform.macos.hotkey_detector.CGEventTapCreate')
@@ -297,7 +314,7 @@ class TestMacOSHotkeyDetectorHistoryToggle(unittest.TestCase):
         detector = MacOSHotkeyDetector(lambda: None, lambda: None)  # No history callback
 
         event = MockCGEvent(keycode=H_KEYCODE)
-        mock_get_flags.return_value = CMD_FLAG
+        mock_get_flags.return_value = CMD_FLAG | 0x20000  # Cmd+Shift pressed
 
         # Should not raise
         detector._event_callback(None, kCGEventKeyDown, event, None)
@@ -512,20 +529,20 @@ class TestMacOSHotkeyDetectorEdgeCases(unittest.TestCase):
     @patch('handfree.platform.macos.hotkey_detector.Quartz', MockQuartz)
     @patch('handfree.platform.macos.hotkey_detector.CGEventTapCreate')
     @patch('handfree.platform.macos.hotkey_detector.CGEventGetFlags')
-    def test_cmd_h_with_other_modifiers(self, mock_get_flags, mock_tap_create):
-        """Test Cmd+H with other modifiers (like Shift) still triggers."""
+    def test_cmd_shift_h_with_other_modifiers(self, mock_get_flags, mock_tap_create):
+        """Test Cmd+Shift+H with other modifiers (like Option) still triggers."""
         from handfree.platform.macos.hotkey_detector import MacOSHotkeyDetector, kCGEventKeyDown
 
         on_history = MagicMock()
         detector = MacOSHotkeyDetector(lambda: None, lambda: None, on_history)
 
         event = MockCGEvent(keycode=H_KEYCODE)
-        # Cmd + Shift + H (Shift flag = 0x20000)
-        mock_get_flags.return_value = CMD_FLAG | 0x20000
+        # Cmd + Shift + Option + H (Option flag = 0x80000)
+        mock_get_flags.return_value = CMD_FLAG | 0x20000 | 0x80000
 
         detector._event_callback(None, kCGEventKeyDown, event, None)
 
-        # Cmd+H should still trigger even with shift held
+        # Cmd+Shift+H should still trigger even with Option held
         on_history.assert_called_once()
 
     @patch('handfree.platform.macos.hotkey_detector.Quartz', MockQuartz)

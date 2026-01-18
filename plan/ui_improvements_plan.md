@@ -182,29 +182,19 @@ class, not in the platform-specific `MacOSHotkeyDetector`.
 
 ---
 
-## Phase 3: History Hotkey Change
+## Phase 3: History Hotkey Change ✅ COMPLETED
 
-### Step 3.1: Update hotkey detection
+### Step 3.1: Update hotkey detection ✅
 
 **File:** `src/handfree/platform/macos/hotkey_detector.py`
 
-**Tasks:**
-- [ ] Add SHIFT_FLAG constant after CMD_FLAG (line 31):
+**Completed Tasks:**
+- [x] Added SHIFT_FLAG constant after CMD_FLAG (line 31):
   ```python
   SHIFT_FLAG = Quartz.kCGEventFlagMaskShift
   ```
 
-- [ ] Modify Cmd+H detection in `_event_callback()` (around line 101-105):
-
-  **From:**
-  ```python
-  elif event_type == kCGEventKeyDown and keycode == H_KEYCODE:
-      cmd_pressed = (flags & CMD_FLAG) != 0
-      if cmd_pressed and self.on_history_toggle:
-          self.on_history_toggle()
-  ```
-
-  **To:**
+- [x] Modified Cmd+Shift+H detection in `_event_callback()` (lines 76-81):
   ```python
   elif event_type == kCGEventKeyDown and keycode == H_KEYCODE:
       cmd_pressed = (flags & CMD_FLAG) != 0
@@ -213,30 +203,21 @@ class, not in the platform-specific `MacOSHotkeyDetector`.
           self.on_history_toggle()
   ```
 
-- [ ] Update `get_history_toggle_description()` (line 139-141):
+- [x] Updated `get_history_toggle_description()` (lines 115-117):
   ```python
   def get_history_toggle_description(self) -> str:
       """Get human-readable description of the history toggle hotkey."""
       return "Cmd+Shift+H"
   ```
 
-### Step 3.2: Update history panel UI
+- [x] Updated docstrings to reference Cmd+Shift+H
+
+### Step 3.2: Update history panel UI ✅
 
 **File:** `src/handfree/ui/history.py`
 
-**Tasks:**
-- [ ] Update hints array in `_create_footer_hints()` (line 140-144):
-
-  **From:**
-  ```python
-  hints = [
-      f"{modifier}+H: Toggle",
-      f"{modifier}+C: Copy selected",
-      "Esc: Close"
-  ]
-  ```
-
-  **To:**
+**Completed Tasks:**
+- [x] Updated hints array in `_create_footer_hints()` (lines 140-144):
   ```python
   hints = [
       f"{modifier}+Shift+H: Toggle",
@@ -245,19 +226,20 @@ class, not in the platform-specific `MacOSHotkeyDetector`.
   ]
   ```
 
-- [ ] Update key bindings (lines 159-160):
-
-  **From:**
-  ```python
-  self._window.bind(f"<{modifier.lower()}-h>", lambda e: self.toggle())
-  self._window.bind(f"<{modifier.lower()}-H>", lambda e: self.toggle())
-  ```
-
-  **To:**
+- [x] Updated key bindings (lines 159-160):
   ```python
   self._window.bind(f"<{modifier.lower()}-Shift-h>", lambda e: self.toggle())
   self._window.bind(f"<{modifier.lower()}-Shift-H>", lambda e: self.toggle())
   ```
+
+### Step 3.3: Tests ✅
+
+**Files Created/Modified:**
+- [x] Created `tests/test_history_hotkey_change.py` - 17 comprehensive tests including property-based tests
+- [x] Updated `tests/test_macos_hotkey_detector.py` - Updated 5 existing tests
+- [x] Updated `tests/test_platform.py` - Updated 1 test
+
+**Test Results:** All 852 applicable tests pass
 
 ---
 

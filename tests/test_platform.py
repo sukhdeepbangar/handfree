@@ -501,7 +501,7 @@ class TestHistoryToggleHotkey(unittest.TestCase):
         from handfree.platform.macos.hotkey_detector import MacOSHotkeyDetector
 
         detector = MacOSHotkeyDetector(lambda: None, lambda: None)
-        self.assertEqual(detector.get_history_toggle_description(), "Cmd+H")
+        self.assertEqual(detector.get_history_toggle_description(), "Cmd+Shift+H")
 
     @patch('handfree.platform.macos.hotkey_detector.Quartz')
     @patch('handfree.platform.macos.hotkey_detector.CGEventTapCreate')

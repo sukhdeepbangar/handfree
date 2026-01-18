@@ -138,7 +138,7 @@ class HistoryPanel:
 
         # Create hints
         hints = [
-            f"{modifier}+H: Toggle",
+            f"{modifier}+Shift+H: Toggle",
             f"{modifier}+C: Copy selected",
             "Esc: Close"
         ]
@@ -156,8 +156,8 @@ class HistoryPanel:
 
         # Bind keyboard shortcuts
         self._window.bind("<Escape>", lambda e: self.hide())
-        self._window.bind(f"<{modifier.lower()}-h>", lambda e: self.toggle())
-        self._window.bind(f"<{modifier.lower()}-H>", lambda e: self.toggle())
+        self._window.bind(f"<{modifier.lower()}-Shift-h>", lambda e: self.toggle())
+        self._window.bind(f"<{modifier.lower()}-Shift-H>", lambda e: self.toggle())
 
     def _create_scrollable_frame(self) -> None:
         """Create a scrollable container for history entries."""
