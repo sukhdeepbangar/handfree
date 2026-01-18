@@ -47,20 +47,27 @@ class TextCleaner:
         "let me rephrase", "correction", "rather",
     ]
 
-    # LLM prompt for aggressive mode
-    LLM_PROMPT = """Clean this speech transcription by removing disfluencies.
+    # LLM prompt for aggressive mode (grammar and tense correction)
+    LLM_PROMPT = """Clean and correct this speech transcription.
 
-Remove: filler words (um, uh, like, you know), false starts, repetitions, incomplete sentences before corrections.
-Preserve: core meaning, natural tone, intentional emphasis.
+Tasks:
+1. Remove filler words (um, uh, like, you know, basically)
+2. Remove false starts and repetitions
+3. Fix grammar errors
+4. Correct tense inconsistencies
+5. Preserve the speaker's intended meaning and tone
 
 Input: {text}
 
-Output only the cleaned text, nothing else:"""
+Output only the corrected text, nothing else:"""
+
+    # Default local model for aggressive mode
+    DEFAULT_MODEL = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
     def __init__(
         self,
         mode: CleanupMode = CleanupMode.STANDARD,
-        api_key: Optional[str] = None,
+        model_name: Optional[str] = None,
         preserve_intentional: bool = True,
     ):
         """
@@ -68,11 +75,12 @@ Output only the cleaned text, nothing else:"""
 
         Args:
             mode: Cleanup aggressiveness level
-            api_key: Groq API key (required for AGGRESSIVE mode)
+            model_name: Local model name for AGGRESSIVE mode (MLX model).
+                       Default: mlx-community/Phi-3-mini-4k-instruct-4bit
             preserve_intentional: Preserve intentional patterns
         """
         self.mode = mode
-        self.api_key = api_key
+        self.model_name = model_name or self.DEFAULT_MODEL
         self.preserve_intentional = preserve_intentional
 
         # Pre-compile regex patterns for performance
@@ -143,37 +151,33 @@ Output only the cleaned text, nothing else:"""
         return self._normalize_whitespace(result)
 
     def clean_aggressive(self, text: str) -> str:
-        """Use LLM for intelligent cleanup."""
+        """Use local LLM for intelligent cleanup with grammar correction."""
         if not text:
             return text
 
-        if not self.api_key:
-            # Fall back to standard if no API key
-            return self.clean_standard(text)
-
         try:
-            from groq import Groq
+            from handfree.local_llm import generate, is_available
 
-            client = Groq(api_key=self.api_key)
-            response = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[
-                    {"role": "user", "content": self.LLM_PROMPT.format(text=text)}
-                ],
+            if not is_available():
+                logger.warning("MLX not available, falling back to standard cleanup")
+                return self.clean_standard(text)
+
+            cleaned = generate(
+                prompt=self.LLM_PROMPT.format(text=text),
                 max_tokens=len(text) * 2,
                 temperature=0.1,
+                model_name=self.model_name,
             )
-
-            cleaned = response.choices[0].message.content.strip()
 
             # Sanity check: if too much removed, fall back
             if len(cleaned) < len(text) * 0.3:
+                logger.warning("LLM removed too much text, falling back to standard")
                 return self.clean_standard(text)
 
             return cleaned
 
         except Exception as e:
-            logger.warning(f"LLM cleanup failed, using rule-based: {e}")
+            logger.warning(f"Local LLM cleanup failed, using rule-based: {e}")
             return self.clean_standard(text)
 
     def _remove_false_starts(self, text: str) -> str:

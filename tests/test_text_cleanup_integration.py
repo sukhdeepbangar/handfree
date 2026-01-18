@@ -27,7 +27,7 @@ class TestGetTextCleanerFactory:
         config = Mock()
         config.text_cleanup = "off"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -39,7 +39,7 @@ class TestGetTextCleanerFactory:
         config = Mock()
         config.text_cleanup = "light"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -51,37 +51,37 @@ class TestGetTextCleanerFactory:
         config = Mock()
         config.text_cleanup = "standard"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
         assert cleaner.mode == CleanupMode.STANDARD
 
-    def test_creates_aggressive_mode_with_api_key(self):
-        """Factory creates AGGRESSIVE mode cleaner with API key."""
+    def test_creates_aggressive_mode_with_model_name(self):
+        """Factory creates AGGRESSIVE mode cleaner with model name."""
         from main import get_text_cleaner
         config = Mock()
         config.text_cleanup = "aggressive"
         config.preserve_intentional = True
-        config.groq_api_key = "test-api-key"
+        config.local_model = "custom-model"
 
         cleaner = get_text_cleaner(config)
 
         assert cleaner.mode == CleanupMode.AGGRESSIVE
-        assert cleaner.api_key == "test-api-key"
+        assert cleaner.model_name == "custom-model"
 
-    def test_aggressive_mode_without_api_key(self):
-        """Factory creates AGGRESSIVE cleaner with None api_key when not provided."""
+    def test_aggressive_mode_with_default_model(self):
+        """Factory creates AGGRESSIVE cleaner with default model."""
         from main import get_text_cleaner
         config = Mock()
         config.text_cleanup = "aggressive"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
         assert cleaner.mode == CleanupMode.AGGRESSIVE
-        assert cleaner.api_key is None
+        assert cleaner.model_name == "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
     def test_preserve_intentional_true_passed_to_cleaner(self):
         """Factory passes preserve_intentional=True to cleaner."""
@@ -89,7 +89,7 @@ class TestGetTextCleanerFactory:
         config = Mock()
         config.text_cleanup = "standard"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -101,7 +101,7 @@ class TestGetTextCleanerFactory:
         config = Mock()
         config.text_cleanup = "standard"
         config.preserve_intentional = False
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -113,7 +113,7 @@ class TestGetTextCleanerFactory:
         config = Mock()
         config.text_cleanup = "invalid_mode"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -130,7 +130,7 @@ class TestPipelineIntegration:
         config = Mock()
         config.text_cleanup = "standard"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -150,7 +150,7 @@ class TestPipelineIntegration:
         config = Mock()
         config.text_cleanup = "light"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -168,7 +168,7 @@ class TestPipelineIntegration:
         config = Mock()
         config.text_cleanup = "off"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -184,7 +184,7 @@ class TestPipelineIntegration:
         config = Mock()
         config.text_cleanup = "standard"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -197,7 +197,7 @@ class TestPipelineIntegration:
         config = Mock()
         config.text_cleanup = "standard"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -327,11 +327,10 @@ class TestConfigValidation:
             warnings = config.validate()
             # Just check it doesn't raise - warnings may be returned
 
-    def test_validate_warns_aggressive_without_api_key(self):
-        """Config.validate() warns when aggressive mode without API key."""
+    def test_validate_warns_aggressive_mode(self):
+        """Config.validate() warns about aggressive mode requiring MLX."""
         config = Config(
             text_cleanup="aggressive",
-            groq_api_key=None,
             transcriber="local"
         )
         warnings = config.validate()
@@ -341,9 +340,10 @@ class TestConfigValidation:
 class TestAggressiveModeFallback:
     """Tests for AGGRESSIVE mode fallback behavior."""
 
-    def test_aggressive_falls_back_without_api_key(self):
-        """AGGRESSIVE mode falls back to STANDARD without API key."""
-        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE, api_key=None)
+    @patch('handfree.local_llm.is_available', return_value=False)
+    def test_aggressive_falls_back_when_mlx_unavailable(self, mock_available):
+        """AGGRESSIVE mode falls back to STANDARD when MLX unavailable."""
+        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE)
 
         text = "Um, hello there"
         result = cleaner.clean(text)
@@ -352,9 +352,10 @@ class TestAggressiveModeFallback:
         assert "Um" not in result
         assert "hello" in result.lower()
 
-    def test_aggressive_mode_cleans_basic_fillers_on_fallback(self):
+    @patch('handfree.local_llm.is_available', return_value=False)
+    def test_aggressive_mode_cleans_basic_fillers_on_fallback(self, mock_available):
         """AGGRESSIVE mode cleans fillers when falling back."""
-        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE, api_key=None)
+        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE)
 
         text = "Um, uh, I think, you know, this is great"
         result = cleaner.clean(text)
@@ -364,15 +365,13 @@ class TestAggressiveModeFallback:
         assert "you know" not in result.lower()
         assert "great" in result
 
-    @patch('groq.Groq')
-    def test_aggressive_falls_back_on_api_error(self, mock_groq_class):
-        """AGGRESSIVE mode falls back to STANDARD on API error."""
-        mock_groq_class.side_effect = Exception("API error")
+    @patch('handfree.local_llm.is_available', return_value=True)
+    @patch('handfree.local_llm.generate')
+    def test_aggressive_falls_back_on_generation_error(self, mock_generate, mock_available):
+        """AGGRESSIVE mode falls back to STANDARD on generation error."""
+        mock_generate.side_effect = Exception("Generation error")
 
-        cleaner = TextCleaner(
-            mode=CleanupMode.AGGRESSIVE,
-            api_key="test-key"
-        )
+        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE)
 
         text = "Um, hello there"
         result = cleaner.clean(text)
@@ -425,13 +424,14 @@ class TestCleanupSkippedWhenOff:
 class TestLoggingIntegration:
     """Tests for cleanup logging behavior."""
 
-    def test_aggressive_mode_logs_warning_on_fallback(self):
-        """AGGRESSIVE mode logs warning when falling back due to no API key."""
+    @patch('handfree.local_llm.is_available', return_value=False)
+    def test_aggressive_mode_logs_warning_on_fallback(self, mock_available):
+        """AGGRESSIVE mode logs warning when falling back due to MLX unavailable."""
         import logging
 
-        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE, api_key=None)
+        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE)
 
-        # The warning is logged in clean_aggressive when api_key is None
+        # The warning is logged in clean_aggressive when MLX is unavailable
         # and it falls back to standard
         text = "Um, hello"
         result = cleaner.clean(text)
@@ -439,18 +439,16 @@ class TestLoggingIntegration:
         # Verify fallback happened (standard mode behavior)
         assert "Um" not in result
 
-    @patch('groq.Groq')
-    def test_aggressive_mode_logs_warning_on_api_error(self, mock_groq_class):
-        """AGGRESSIVE mode logs warning on API error."""
+    @patch('handfree.local_llm.is_available', return_value=True)
+    @patch('handfree.local_llm.generate')
+    def test_aggressive_mode_logs_warning_on_generation_error(self, mock_generate, mock_available):
+        """AGGRESSIVE mode logs warning on generation error."""
         import logging
 
-        mock_groq_class.side_effect = Exception("API connection failed")
+        mock_generate.side_effect = Exception("Generation failed")
 
         with patch('handfree.text_cleanup.logger') as mock_logger:
-            cleaner = TextCleaner(
-                mode=CleanupMode.AGGRESSIVE,
-                api_key="test-key"
-            )
+            cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE)
             result = cleaner.clean("Um, hello")
 
             # Verify warning was logged
@@ -487,7 +485,7 @@ class TestEndToEndCleanupPipeline:
         config = Mock()
         config.text_cleanup = "standard"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         # Create cleaner via factory
         cleaner = get_text_cleaner(config)
@@ -512,7 +510,7 @@ class TestEndToEndCleanupPipeline:
         config = Mock()
         config.text_cleanup = "standard"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -533,7 +531,7 @@ class TestEndToEndCleanupPipeline:
         config = Mock()
         config.text_cleanup = "light"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 
@@ -554,10 +552,10 @@ class TestCleanerModeAttributes:
             cleaner = TextCleaner(mode=mode)
             assert cleaner.mode == mode
 
-    def test_cleaner_stores_api_key(self):
-        """TextCleaner stores the api_key attribute."""
-        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE, api_key="test-key")
-        assert cleaner.api_key == "test-key"
+    def test_cleaner_stores_model_name(self):
+        """TextCleaner stores the model_name attribute."""
+        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE, model_name="custom-model")
+        assert cleaner.model_name == "custom-model"
 
     def test_cleaner_stores_preserve_intentional(self):
         """TextCleaner stores the preserve_intentional attribute."""
@@ -586,7 +584,7 @@ class TestTextCleanerWithConfigIntegration:
             config = Mock()
             config.text_cleanup = config_mode
             config.preserve_intentional = True
-            config.groq_api_key = None
+            config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
             cleaner = get_text_cleaner(config)
             assert cleaner.mode == expected_enum, f"Failed for mode: {config_mode}"
@@ -616,7 +614,7 @@ class TestEmptyAfterCleanup:
         config = Mock()
         config.text_cleanup = "standard"
         config.preserve_intentional = True
-        config.groq_api_key = None
+        config.local_model = "mlx-community/Phi-3-mini-4k-instruct-4bit"
 
         cleaner = get_text_cleaner(config)
 

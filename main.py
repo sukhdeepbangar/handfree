@@ -100,7 +100,7 @@ def get_text_cleaner(config: Config) -> TextCleaner:
 
     return TextCleaner(
         mode=mode,
-        api_key=config.groq_api_key if mode == CleanupMode.AGGRESSIVE else None,
+        model_name=config.local_model,
         preserve_intentional=config.preserve_intentional,
     )
 

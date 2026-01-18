@@ -73,18 +73,18 @@ Natural speech contains disfluencies that degrade written output:
 - [x] 6.9 Test startup banner displays correct cleanup mode
 
 ### Phase 7: Local Model Integration (MLX + Phi-3-mini)
-- [ ] 7.1 Add `mlx` and `mlx-lm` to dependencies (pyproject.toml)
-- [ ] 7.2 Create `local_llm.py` module for MLX model management
-- [ ] 7.3 Implement lazy model loading (load on first use)
-- [ ] 7.4 Update `clean_aggressive()` to use MLX instead of Groq
-- [ ] 7.5 Update LLM_PROMPT for grammar and tense correction
-- [ ] 7.6 Add `HANDFREE_LOCAL_MODEL` config option (default: Phi-3-mini)
-- [ ] 7.7 Add model download/cache management
-- [ ] 7.8 Add fallback to STANDARD mode if MLX unavailable
+- [x] 7.1 Add `mlx` and `mlx-lm` to dependencies (pyproject.toml)
+- [x] 7.2 Create `local_llm.py` module for MLX model management
+- [x] 7.3 Implement lazy model loading (load on first use)
+- [x] 7.4 Update `clean_aggressive()` to use MLX instead of Groq
+- [x] 7.5 Update LLM_PROMPT for grammar and tense correction
+- [x] 7.6 Add `HANDFREE_LOCAL_MODEL` config option (default: Phi-3-mini)
+- [x] 7.7 Add model download/cache management
+- [x] 7.8 Add fallback to STANDARD mode if MLX unavailable
 - [ ] 7.9 Performance optimization: batch processing for long texts
-- [ ] 7.10 Add unit tests for local model integration
-- [ ] 7.11 Update .env.example with local model configuration
-- [ ] 7.12 Remove Groq dependency from AGGRESSIVE mode
+- [x] 7.10 Add unit tests for local model integration
+- [x] 7.11 Update .env.example with local model configuration
+- [x] 7.12 Remove Groq dependency from AGGRESSIVE mode
 
 ---
 

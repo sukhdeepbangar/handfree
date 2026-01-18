@@ -59,6 +59,11 @@ macos = [
 local = [
     "pywhispercpp>=1.2.0",
 ]
+# Local LLM for aggressive text cleanup (MLX on Apple Silicon)
+local-llm = [
+    "mlx>=0.5.0",
+    "mlx-lm>=0.4.0",
+]
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
@@ -67,7 +72,7 @@ dev = [
 ]
 # All optional dependencies for development
 all = [
-    "handfree[macos,local,dev]",
+    "handfree[macos,local,local-llm,dev]",
 ]
 
 [project.scripts]

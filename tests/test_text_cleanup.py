@@ -318,17 +318,28 @@ class TestPreserveIntentional:
 class TestCleanupModeAggressive:
     """Tests for aggressive cleanup mode."""
 
-    def test_aggressive_without_api_key_falls_back(self):
-        """Aggressive mode without API key falls back to standard."""
-        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE, api_key=None)
-        result = cleaner.clean("Um, hello there")
-        # Should still clean basic fillers (fallback to standard)
-        assert "Um" not in result
+    def test_aggressive_falls_back_when_mlx_unavailable(self):
+        """Aggressive mode falls back to standard when MLX unavailable."""
+        from unittest.mock import patch
+
+        with patch('handfree.local_llm.is_available', return_value=False):
+            cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE)
+            result = cleaner.clean("Um, hello there")
+            # Should still clean basic fillers (fallback to standard)
+            assert "Um" not in result
 
     def test_aggressive_empty_string(self):
         """Aggressive mode handles empty string."""
-        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE, api_key=None)
+        cleaner = TextCleaner(mode=CleanupMode.AGGRESSIVE)
         assert cleaner.clean("") == ""
+
+    def test_aggressive_with_custom_model(self):
+        """Aggressive mode accepts custom model name."""
+        cleaner = TextCleaner(
+            mode=CleanupMode.AGGRESSIVE,
+            model_name="custom-model"
+        )
+        assert cleaner.model_name == "custom-model"
 
 
 class TestCleanMethod:

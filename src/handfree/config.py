@@ -63,6 +63,9 @@ class Config:
     text_cleanup: str = "standard"  # off, light, standard, aggressive
     preserve_intentional: bool = True
 
+    # Local LLM settings (for aggressive text cleanup on Apple Silicon)
+    local_model: str = "mlx-community/Phi-3-mini-4k-instruct-4bit"
+
     @classmethod
     def from_env(cls) -> "Config":
         """
@@ -86,6 +89,7 @@ class Config:
             HANDFREE_HOTKEY: Optional. Custom hotkey (e.g., "ctrl+shift+r"). Platform default if not set.
             HANDFREE_TEXT_CLEANUP: Optional. Text cleanup mode: off, light, standard, aggressive (default: standard).
             HANDFREE_PRESERVE_INTENTIONAL: Optional. Preserve intentional patterns like emphasis (default: true).
+            HANDFREE_LOCAL_MODEL: Optional. Local MLX model for aggressive cleanup (default: mlx-community/Phi-3-mini-4k-instruct-4bit).
 
         Returns:
             Config instance with loaded values.
@@ -132,6 +136,10 @@ class Config:
             custom_hotkey=os.environ.get("HANDFREE_HOTKEY"),
             text_cleanup=os.environ.get("HANDFREE_TEXT_CLEANUP", "standard").lower(),
             preserve_intentional=parse_bool(os.environ.get("HANDFREE_PRESERVE_INTENTIONAL", "true"), True),
+            local_model=os.environ.get(
+                "HANDFREE_LOCAL_MODEL",
+                "mlx-community/Phi-3-mini-4k-instruct-4bit"
+            ),
         )
 
     def validate(self) -> List[str]:
@@ -200,11 +208,12 @@ class Config:
                 f"Got: {self.text_cleanup}"
             )
 
-        # Warn if aggressive mode without API key
-        if self.text_cleanup == "aggressive" and not self.groq_api_key:
+        # Warn if aggressive mode (requires MLX on Apple Silicon)
+        if self.text_cleanup == "aggressive":
             warnings.append(
-                "HANDFREE_TEXT_CLEANUP=aggressive requires GROQ_API_KEY. "
-                "Will fall back to 'standard' mode."
+                "HANDFREE_TEXT_CLEANUP=aggressive requires MLX (Apple Silicon). "
+                "Install with: pip install 'handfree[local-llm]'. "
+                "Will fall back to 'standard' mode if unavailable."
             )
 
         return warnings
