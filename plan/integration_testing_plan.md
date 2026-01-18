@@ -19,7 +19,7 @@ Step-by-step guide to implement functional/integration testing for HandFree.
 - [x] 2.2 Create `manifest.json` schema
 - [x] 2.3 Record/generate initial fixtures (hello_world, silence, noise)
 - [x] 2.4 Implement `audio_generator.py` for CI fallback
-- [ ] 2.5 Set up Git LFS for `.wav` files (optional)
+- [x] 2.5 Set up Git LFS for `.wav` files (optional)
 
 ### Phase 3: Integration Tests
 - [x] 3.1 Implement `test_audio_recorder_integration.py`

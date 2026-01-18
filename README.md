@@ -495,6 +495,29 @@ pip install pywhispercpp
 
 ## Development
 
+### Prerequisites for Development
+
+This repository uses **Git LFS** to manage audio test fixtures. Install it before cloning:
+
+```bash
+# macOS
+brew install git-lfs
+
+# Ubuntu/Debian
+sudo apt install git-lfs
+
+# Windows (with Chocolatey)
+choco install git-lfs
+```
+
+After installing, initialize Git LFS:
+
+```bash
+git lfs install
+```
+
+When you clone the repository, Git LFS will automatically download the audio fixture files.
+
 ### Running Tests
 
 ```bash
@@ -512,6 +535,9 @@ pytest tests/test_transcriber.py
 
 # Run with coverage
 pytest --cov=handfree
+
+# Run integration tests (requires hardware/whisper model)
+pytest tests/integration/ -v -m integration
 ```
 
 ### Project Structure

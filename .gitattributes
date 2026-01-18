@@ -1,0 +1,11 @@
+# Git LFS tracking for audio test fixtures
+# See: https://git-lfs.com/
+
+# Audio formats
+*.wav filter=lfs diff=lfs merge=lfs -text
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.aiff filter=lfs diff=lfs merge=lfs -text
+*.flac filter=lfs diff=lfs merge=lfs -text
+
+# Whisper model files (if stored in repo)
+*.bin filter=lfs diff=lfs merge=lfs -text
