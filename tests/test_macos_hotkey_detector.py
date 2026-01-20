@@ -13,11 +13,19 @@ Comprehensive tests covering:
 Uses property-based testing with Hypothesis for state machine verification.
 """
 
+import sys
 import unittest
-from unittest.mock import MagicMock, patch, Mock
-from typing import Optional
 
 import pytest
+
+# Skip all tests in this module on non-macOS platforms
+pytestmark = pytest.mark.skipif(
+    sys.platform != "darwin",
+    reason="macOS-specific hotkey detector tests"
+)
+
+from unittest.mock import MagicMock, patch, Mock
+from typing import Optional
 from hypothesis import given, strategies as st, settings, assume
 
 
