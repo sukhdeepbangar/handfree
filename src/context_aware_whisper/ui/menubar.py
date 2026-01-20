@@ -109,15 +109,15 @@ class MenuBarApp:
         Must be called from the main thread (or a thread with a run loop).
         Fails gracefully if not running in a proper macOS application context.
 
-        Set HANDFREE_DISABLE_MENUBAR=1 to skip menu bar creation (useful for tests).
+        Set CAW_DISABLE_MENUBAR=1 to skip menu bar creation (useful for tests).
         """
         if self._initialized:
             return
 
         # Check if menu bar is disabled via environment variable
         # This is useful for running in pytest where NSStatusBar crashes
-        if os.environ.get("HANDFREE_DISABLE_MENUBAR", "").lower() in ("1", "true", "yes"):
-            raise RuntimeError("Menu bar disabled via HANDFREE_DISABLE_MENUBAR environment variable")
+        if os.environ.get("CAW_DISABLE_MENUBAR", "").lower() in ("1", "true", "yes"):
+            raise RuntimeError("Menu bar disabled via CAW_DISABLE_MENUBAR environment variable")
 
         try:
             # Create delegate for handling callbacks
@@ -127,7 +127,7 @@ class MenuBarApp:
 
             # Create status bar item
             # Note: This may crash with SIGABRT if not in a proper GUI context
-            # (e.g., running in pytest without a display). Use HANDFREE_DISABLE_MENUBAR=1
+            # (e.g., running in pytest without a display). Use CAW_DISABLE_MENUBAR=1
             # to disable in such environments.
             status_bar = NSStatusBar.systemStatusBar()
             self._status_item = status_bar.statusItemWithLength_(NSVariableStatusItemLength)

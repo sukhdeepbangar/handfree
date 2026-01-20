@@ -232,14 +232,14 @@ class TestSubprocessIndicatorScriptStructure:
     @pytest.mark.skipif(sys.platform != "darwin", reason="macOS only")
     def test_subprocess_indicator_script_exists(self):
         """Test that subprocess_indicator.py exists."""
-        script_path = Path(__file__).parent.parent / "src" / "context-aware-whisper" / "ui" / "subprocess_indicator.py"
+        script_path = Path(__file__).parent.parent / "src" / "context_aware_whisper" / "ui" / "subprocess_indicator.py"
         assert script_path.exists(), f"Script not found at {script_path}"
 
     def test_subprocess_indicator_script_is_importable_with_mocks(self):
         """Test that subprocess_indicator.py can be parsed (not executed on non-macOS)."""
         import ast
 
-        script_path = Path(__file__).parent.parent / "src" / "context-aware-whisper" / "ui" / "subprocess_indicator.py"
+        script_path = Path(__file__).parent.parent / "src" / "context_aware_whisper" / "ui" / "subprocess_indicator.py"
         if script_path.exists():
             with open(script_path) as f:
                 code = f.read()
@@ -252,7 +252,7 @@ class TestSubprocessIndicatorVisualDesign:
 
     def test_visual_constants_defined(self):
         """Test that visual design constants are defined in the script."""
-        script_path = Path(__file__).parent.parent / "src" / "context-aware-whisper" / "ui" / "subprocess_indicator.py"
+        script_path = Path(__file__).parent.parent / "src" / "context_aware_whisper" / "ui" / "subprocess_indicator.py"
         if script_path.exists():
             with open(script_path) as f:
                 code = f.read()
@@ -266,7 +266,7 @@ class TestSubprocessIndicatorVisualDesign:
 
     def test_color_constants_defined(self):
         """Test that color constants are defined in the script."""
-        script_path = Path(__file__).parent.parent / "src" / "context-aware-whisper" / "ui" / "subprocess_indicator.py"
+        script_path = Path(__file__).parent.parent / "src" / "context_aware_whisper" / "ui" / "subprocess_indicator.py"
         if script_path.exists():
             with open(script_path) as f:
                 code = f.read()
@@ -327,7 +327,7 @@ class TestSubprocessIndicatorIPCProtocol:
         """Test that all valid IPC commands are documented."""
         valid_commands = ['recording', 'transcribing', 'success', 'error', 'idle', 'exit']
 
-        script_path = Path(__file__).parent.parent / "src" / "context-aware-whisper" / "ui" / "subprocess_indicator.py"
+        script_path = Path(__file__).parent.parent / "src" / "context_aware_whisper" / "ui" / "subprocess_indicator.py"
         if script_path.exists():
             with open(script_path) as f:
                 code = f.read()
@@ -337,7 +337,7 @@ class TestSubprocessIndicatorIPCProtocol:
 
     def test_ready_signal_sent_on_startup(self):
         """Test that subprocess sends 'ready' signal on startup."""
-        script_path = Path(__file__).parent.parent / "src" / "context-aware-whisper" / "ui" / "subprocess_indicator.py"
+        script_path = Path(__file__).parent.parent / "src" / "context_aware_whisper" / "ui" / "subprocess_indicator.py"
         if script_path.exists():
             with open(script_path) as f:
                 code = f.read()
