@@ -7,8 +7,8 @@ Design documentation for Context-Aware Whisper, a speech-to-text application for
 | Document | Status | Description |
 |----------|--------|-------------|
 | [spec.md](./spec.md) | **Implemented** | Core architecture and module specifications |
-| [spec.md#module-6](./spec.md#module-6-text_cleanuppy) | Planned | Text cleanup/disfluency removal |
-| [cross_platform_ui_spec.md](./cross_platform_ui_spec.md) | Planned | Cross-platform support & UI framework |
+| [spec.md#module-6](./spec.md#module-6-text_cleanuppy) | **Implemented** | Text cleanup/disfluency removal |
+| [cross_platform_ui_spec.md](./cross_platform_ui_spec.md) | **Implemented** | Cross-platform support & UI framework |
 | [ui_improvements_spec.md](./ui_improvements_spec.md) | Partial | UI/UX enhancements |
 | [subprocess_indicator_spec.md](./subprocess_indicator_spec.md) | **Implemented** | Focus-preserving recording indicator |
 
@@ -28,7 +28,9 @@ Design documentation for Context-Aware Whisper, a speech-to-text application for
   - `audio_recorder.py` - Microphone audio capture
   - `transcriber.py` - Groq Whisper API client
   - `local_transcriber.py` - whisper.cpp local transcription
-  - `text_cleanup.py` - Speech disfluency removal (planned)
+  - `text_cleanup.py` - Speech disfluency removal
+  - `local_llm.py` - Local LLM for aggressive text cleanup
+  - `model_manager.py` - Model management utilities
   - `output_handler.py` - Clipboard & auto-typing
   - `main.py` - Application entry point
 - Dependencies and configuration
@@ -42,10 +44,10 @@ Design documentation for Context-Aware Whisper, a speech-to-text application for
 | Spec | Code | Purpose |
 |------|------|---------|
 | [spec.md#module-3](./spec.md) | [transcriber.py](../src/context_aware_whisper/transcriber.py) | Groq Whisper API (cloud) |
-| [spec.md#module-3b](./spec.md) | — | whisper.cpp local transcription (future) |
+| [spec.md#module-3b](./spec.md) | [local_transcriber.py](../src/context_aware_whisper/local_transcriber.py) | whisper.cpp local transcription |
 
 **Cloud (Groq):** Fast, accurate, requires internet and API key
-**Local (whisper.cpp):** Private, offline, no API costs (planned)
+**Local (whisper.cpp):** Private, offline, no API costs
 
 See also: [whisper_cpp_plan.md](../plan/whisper_cpp_plan.md)
 
@@ -56,7 +58,7 @@ See also: [whisper_cpp_plan.md](../plan/whisper_cpp_plan.md)
 | Spec | Code | Purpose |
 |------|------|---------|
 | [cross_platform_ui_spec.md](./cross_platform_ui_spec.md) | [src/context_aware_whisper/ui/](../src/context_aware_whisper/ui/) | Recording indicator, history panel, tkinter UI |
-| [ui_improvements_spec.md](./ui_improvements_spec.md) | — | Animated bars, menu bar icon, paste-based output |
+| [ui_improvements_spec.md](./ui_improvements_spec.md) | [menubar.py](../src/context_aware_whisper/ui/menubar.py) | Menu bar icon integration |
 | [subprocess_indicator_spec.md](./subprocess_indicator_spec.md) | [subprocess_indicator.py](../src/context_aware_whisper/ui/subprocess_indicator.py) | Focus-preserving indicator via subprocess |
 
 **Key Features:**
@@ -64,6 +66,11 @@ See also: [whisper_cpp_plan.md](../plan/whisper_cpp_plan.md)
 - Transcription history panel with SQLite storage
 - Menu bar icon for app visibility
 - Focus preservation during recording
+
+**Additional UI Components:**
+- `native_indicator.py` - Native platform indicator
+- `history.py` - History panel UI
+- `storage/history_store.py` - SQLite history persistence
 
 ---
 
@@ -77,8 +84,14 @@ See also: [whisper_cpp_plan.md](../plan/whisper_cpp_plan.md)
 | Platform | Hotkey | Status |
 |----------|--------|--------|
 | macOS | Fn/Globe key | **Implemented** |
-| Windows | Ctrl+Shift+Space | Planned |
-| Linux | Ctrl+Shift+Space | Planned |
+| Windows | Ctrl+Shift+Space | **Implemented** |
+| Linux | Ctrl+Shift+Space | **Implemented** |
+
+**Platform Modules:**
+- `platform/base.py` - Abstract base classes
+- `platform/macos/` - macOS-specific (mute detector, hotkey, output handler)
+- `platform/windows/` - Windows-specific (hotkey detector, output handler)
+- `platform/linux/` - Linux-specific (hotkey detector, output handler)
 
 ---
 
