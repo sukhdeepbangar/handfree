@@ -489,9 +489,9 @@ class TestExceptionsModule:
     """Tests for the exceptions module."""
 
     def test_all_exceptions_inherit_from_base(self):
-        """All custom exceptions inherit from Context-Aware WhisperError."""
+        """All custom exceptions inherit from CAWError."""
         from context_aware_whisper.exceptions import (
-            Context-Aware WhisperError,
+            CAWError,
             ConfigurationError,
             MuteDetectionError,
             AudioRecordingError,
@@ -499,11 +499,11 @@ class TestExceptionsModule:
             OutputError,
         )
 
-        assert issubclass(ConfigurationError, Context-Aware WhisperError)
-        assert issubclass(MuteDetectionError, Context-Aware WhisperError)
-        assert issubclass(AudioRecordingError, Context-Aware WhisperError)
-        assert issubclass(TranscriptionError, Context-Aware WhisperError)
-        assert issubclass(OutputError, Context-Aware WhisperError)
+        assert issubclass(ConfigurationError, CAWError)
+        assert issubclass(MuteDetectionError, CAWError)
+        assert issubclass(AudioRecordingError, CAWError)
+        assert issubclass(TranscriptionError, CAWError)
+        assert issubclass(OutputError, CAWError)
 
     def test_exceptions_can_be_raised_with_message(self):
         """Custom exceptions can be raised with a message."""

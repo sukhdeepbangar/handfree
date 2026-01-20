@@ -433,6 +433,6 @@ class TestStorageError:
         assert StorageError is not None
 
     def test_storage_error_is_caw_error(self):
-        """Test that StorageError inherits from Context-Aware WhisperError."""
-        from context_aware_whisper.exceptions import StorageError, Context-Aware WhisperError
-        assert issubclass(StorageError, Context-Aware WhisperError)
+        """Test that StorageError inherits from CAWError."""
+        from context_aware_whisper.exceptions import StorageError, CAWError
+        assert issubclass(StorageError, CAWError)

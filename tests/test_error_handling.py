@@ -13,7 +13,7 @@ import pytest
 
 from context_aware_whisper.config import Config
 from context_aware_whisper.exceptions import (
-    Context-Aware WhisperError,
+    CAWError,
     UIInitializationError,
     HotkeyDetectorError,
     OutputHandlerError,
@@ -64,8 +64,8 @@ class TestNewExceptions(unittest.TestCase):
     """Tests for new exception classes."""
 
     def test_ui_initialization_error_inheritance(self):
-        """Test UIInitializationError inherits from Context-Aware WhisperError."""
-        self.assertTrue(issubclass(UIInitializationError, Context-Aware WhisperError))
+        """Test UIInitializationError inherits from CAWError."""
+        self.assertTrue(issubclass(UIInitializationError, CAWError))
 
     def test_ui_initialization_error_message(self):
         """Test UIInitializationError can be raised with message."""
@@ -74,8 +74,8 @@ class TestNewExceptions(unittest.TestCase):
         self.assertEqual(str(context.exception), "UI failed to initialize")
 
     def test_hotkey_detector_error_inheritance(self):
-        """Test HotkeyDetectorError inherits from Context-Aware WhisperError."""
-        self.assertTrue(issubclass(HotkeyDetectorError, Context-Aware WhisperError))
+        """Test HotkeyDetectorError inherits from CAWError."""
+        self.assertTrue(issubclass(HotkeyDetectorError, CAWError))
 
     def test_hotkey_detector_error_message(self):
         """Test HotkeyDetectorError can be raised with message."""
@@ -84,8 +84,8 @@ class TestNewExceptions(unittest.TestCase):
         self.assertEqual(str(context.exception), "Hotkey detection failed")
 
     def test_output_handler_error_inheritance(self):
-        """Test OutputHandlerError inherits from Context-Aware WhisperError."""
-        self.assertTrue(issubclass(OutputHandlerError, Context-Aware WhisperError))
+        """Test OutputHandlerError inherits from CAWError."""
+        self.assertTrue(issubclass(OutputHandlerError, CAWError))
 
     def test_output_handler_error_message(self):
         """Test OutputHandlerError can be raised with message."""

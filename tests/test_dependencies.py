@@ -288,9 +288,9 @@ class TestExceptionHierarchy(unittest.TestCase):
         self.assertIsNotNone(PlatformNotSupportedError)
 
     def test_platform_not_supported_error_inherits_caw_error(self):
-        """Test PlatformNotSupportedError inherits from Context-Aware WhisperError."""
-        from context_aware_whisper.exceptions import Context-Aware WhisperError, PlatformNotSupportedError
-        self.assertTrue(issubclass(PlatformNotSupportedError, Context-Aware WhisperError))
+        """Test PlatformNotSupportedError inherits from CAWError."""
+        from context_aware_whisper.exceptions import CAWError, PlatformNotSupportedError
+        self.assertTrue(issubclass(PlatformNotSupportedError, CAWError))
 
     def test_platform_not_supported_error_inherits_exception(self):
         """Test PlatformNotSupportedError inherits from Exception."""

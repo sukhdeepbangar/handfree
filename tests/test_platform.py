@@ -440,10 +440,10 @@ class TestPlatformNotSupportedError(unittest.TestCase):
     """Tests for PlatformNotSupportedError exception."""
 
     def test_exception_inheritance(self):
-        """Test PlatformNotSupportedError inherits from Context-Aware WhisperError."""
-        from context_aware_whisper.exceptions import Context-Aware WhisperError, PlatformNotSupportedError
+        """Test PlatformNotSupportedError inherits from CAWError."""
+        from context_aware_whisper.exceptions import CAWError, PlatformNotSupportedError
 
-        self.assertTrue(issubclass(PlatformNotSupportedError, Context-Aware WhisperError))
+        self.assertTrue(issubclass(PlatformNotSupportedError, CAWError))
 
     def test_exception_message(self):
         """Test exception can be raised with message."""

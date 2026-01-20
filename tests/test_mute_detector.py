@@ -2,8 +2,18 @@
 Unit tests for MuteDetector module.
 """
 
+import sys
 import unittest
 from unittest.mock import Mock, MagicMock, patch
+
+import pytest
+
+# Skip entire module on non-macOS platforms
+pytestmark = pytest.mark.skipif(
+    sys.platform != "darwin",
+    reason="MuteDetector requires macOS"
+)
+
 from context_aware_whisper.mute_detector import MuteDetector
 
 

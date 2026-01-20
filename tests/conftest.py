@@ -64,14 +64,49 @@ def _setup_global_mocks():
 
     # Mock macOS-specific modules if not on macOS
     if sys.platform != 'darwin':
+        # Create a mock NSObject class that can be subclassed
+        class MockNSObject:
+            pass
+
+        # Mock objc module (from pyobjc-core)
+        if 'objc' not in sys.modules:
+            mock_objc = MagicMock()
+            mock_objc.NSObject = MockNSObject
+            sys.modules['objc'] = mock_objc
+
+        # Mock Foundation with NSObject
         if 'Foundation' not in sys.modules:
-            sys.modules['Foundation'] = MagicMock()
+            mock_foundation = MagicMock()
+            mock_foundation.NSObject = MockNSObject
+            mock_foundation.NSNotificationCenter = MagicMock()
+            sys.modules['Foundation'] = mock_foundation
+
         if 'AVFAudio' not in sys.modules:
             sys.modules['AVFAudio'] = MagicMock()
         if 'Quartz' not in sys.modules:
-            sys.modules['Quartz'] = MagicMock()
+            mock_quartz = MagicMock()
+            mock_quartz.CGEventTapCreate = MagicMock()
+            mock_quartz.CGEventMaskBit = MagicMock()
+            sys.modules['Quartz'] = mock_quartz
         if 'AppKit' not in sys.modules:
-            sys.modules['AppKit'] = MagicMock()
+            mock_appkit = MagicMock()
+            mock_appkit.NSObject = MockNSObject
+            mock_appkit.NSApplication = MagicMock()
+            sys.modules['AppKit'] = mock_appkit
+
+        # Mock Cocoa (used by rumps and pyobjc)
+        if 'Cocoa' not in sys.modules:
+            mock_cocoa = MagicMock()
+            mock_cocoa.NSObject = MockNSObject
+            sys.modules['Cocoa'] = mock_cocoa
+
+        # Mock rumps (macOS menu bar library)
+        if 'rumps' not in sys.modules:
+            mock_rumps = MagicMock()
+            mock_rumps.App = MagicMock()
+            mock_rumps.MenuItem = MagicMock()
+            mock_rumps.clicked = MagicMock()
+            sys.modules['rumps'] = mock_rumps
 
 
 # Run mocks setup immediately when conftest is loaded
