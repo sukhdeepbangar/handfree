@@ -349,7 +349,7 @@ class TestConfigValidation:
         """validate() warns for unusual sample rate."""
         from context_aware_whisper.config import Config
 
-        config = Config(groq_api_key="test-key", sample_rate=12345)
+        config = Config(groq_api_key="test-key", sample_rate=12345, text_cleanup="standard")
         warnings = config.validate()
 
         assert len(warnings) == 1
@@ -360,7 +360,7 @@ class TestConfigValidation:
         """validate() warns for very large history_max_entries."""
         from context_aware_whisper.config import Config
 
-        config = Config(groq_api_key="test-key", history_max_entries=200000)
+        config = Config(groq_api_key="test-key", history_max_entries=200000, text_cleanup="standard")
         warnings = config.validate()
 
         assert len(warnings) == 1
@@ -372,7 +372,7 @@ class TestConfigValidation:
         """validate() doesn't warn for standard sample rates."""
         from context_aware_whisper.config import Config
 
-        config = Config(groq_api_key="test-key", sample_rate=rate)
+        config = Config(groq_api_key="test-key", sample_rate=rate, text_cleanup="standard")
         warnings = config.validate()
 
         assert len(warnings) == 0
