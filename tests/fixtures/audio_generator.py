@@ -124,29 +124,45 @@ def generate_tts(filename: str, text: str, voice: str = "Alex") -> Path | None:
         return None
 
 
-def generate_all():
-    """Generate all standard fixtures."""
+def generate_all(force: bool = False):
+    """Generate all standard fixtures.
+
+    Args:
+        force: If True, regenerate all fixtures. If False, skip existing files.
+    """
     FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
 
     print("=== Generating Audio Fixtures ===\n")
 
     # Generate programmatic fixtures
-    print("Generating silence.wav...")
-    generate_silence("silence.wav", 3.0)
+    if force or not (FIXTURES_DIR / "silence.wav").exists():
+        print("Generating silence.wav...")
+        generate_silence("silence.wav", 3.0)
+    else:
+        print("Skipping silence.wav (already exists)")
 
-    print("Generating noise.wav...")
-    generate_noise("noise.wav", 3.0, 0.05)
+    if force or not (FIXTURES_DIR / "noise.wav").exists():
+        print("Generating noise.wav...")
+        generate_noise("noise.wav", 3.0, 0.05)
+    else:
+        print("Skipping noise.wav (already exists)")
 
     # Try TTS, fall back to tones if unavailable
-    print("\nGenerating hello_world.wav...")
-    if not generate_tts("hello_world.wav", "Hello world"):
-        print("Falling back to tone...")
-        generate_tone("hello_world.wav", 2.0, 440.0)
+    if force or not (FIXTURES_DIR / "hello_world.wav").exists():
+        print("\nGenerating hello_world.wav...")
+        if not generate_tts("hello_world.wav", "Hello world"):
+            print("Falling back to tone...")
+            generate_tone("hello_world.wav", 2.0, 440.0)
+    else:
+        print("Skipping hello_world.wav (already exists)")
 
-    print("\nGenerating short_phrase.wav...")
-    if not generate_tts("short_phrase.wav", "This is a test"):
-        print("Falling back to tone...")
-        generate_tone("short_phrase.wav", 3.0, 880.0)
+    if force or not (FIXTURES_DIR / "short_phrase.wav").exists():
+        print("\nGenerating short_phrase.wav...")
+        if not generate_tts("short_phrase.wav", "This is a test"):
+            print("Falling back to tone...")
+            generate_tone("short_phrase.wav", 3.0, 880.0)
+    else:
+        print("Skipping short_phrase.wav (already exists)")
 
     print("\n=== Done ===")
     print(f"Fixtures directory: {FIXTURES_DIR}")
