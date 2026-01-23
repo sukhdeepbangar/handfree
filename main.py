@@ -19,6 +19,7 @@ from context_aware_whisper.config import Config
 from context_aware_whisper.transcriber import Transcriber
 from context_aware_whisper.local_transcriber import LocalTranscriber
 from context_aware_whisper.text_cleanup import TextCleaner, CleanupMode
+from context_aware_whisper.vocabulary import load_vocabulary
 from context_aware_whisper.exceptions import (
     TranscriptionError,
     LocalTranscriptionError,
@@ -152,6 +153,13 @@ class CAWApp:
         self.text_cleaner = get_text_cleaner(config)
         logger.debug(f"Text cleaner initialized: mode={config.text_cleanup}")
 
+        # Load vocabulary hints for transcription
+        self.vocabulary_prompt = load_vocabulary(config.vocabulary_file)
+        if self.vocabulary_prompt:
+            logger.info(f"Vocabulary hints loaded: {self.vocabulary_prompt[:50]}...")
+        else:
+            logger.debug("No vocabulary file configured")
+
         # Initialize output handler with error handling
         try:
             self.output = create_output_handler(type_delay=config.type_delay)
@@ -264,7 +272,8 @@ class CAWApp:
         try:
             text = self.transcriber.transcribe(
                 audio_bytes,
-                language=self.language
+                language=self.language,
+                prompt=self.vocabulary_prompt
             )
             if text:
                 # Clean disfluencies
